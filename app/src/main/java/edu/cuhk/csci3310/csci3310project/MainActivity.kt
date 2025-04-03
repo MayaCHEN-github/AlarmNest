@@ -1,47 +1,55 @@
 package edu.cuhk.csci3310.csci3310project
 
+import android.Manifest
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.core.content.ContextCompat
+import edu.cuhk.csci3310.csci3310project.alarm.AlarmTest
 import edu.cuhk.csci3310.csci3310project.ui.theme.CSCI3310ProjectTheme
 
 class MainActivity : ComponentActivity() {
+    lateinit var permissionLauncher: ActivityResultLauncher<String>
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Log.d("MainActivity", "onCreate called")
+        
+        permissionLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { isGranted ->
+            if (isGranted) {
+                Log.d("MainActivity", "通知权限已授予")
+            } else {
+                Log.w("MainActivity", "通知权限被拒绝")
+            }
+        }
+        
         enableEdgeToEdge()
         setContent {
             CSCI3310ProjectTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+                MainScreen(this)
             }
         }
     }
 }
 
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    CSCI3310ProjectTheme {
-        Greeting("Android")
+fun MainScreen(activity: MainActivity) {
+    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+        AlarmTest(activity, innerPadding)
     }
 }
