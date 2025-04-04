@@ -11,10 +11,14 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import edu.cuhk.csci3310.csci3310project.alarm.AlarmPermission
 import edu.cuhk.csci3310.csci3310project.alarm.AlarmTest
+import edu.cuhk.csci3310.csci3310project.location.googlemap.GoogleMapScreen
+import edu.cuhk.csci3310.csci3310project.location.googlemap.MapCard
+import edu.cuhk.csci3310.csci3310project.location.LocationSetScreen
 import edu.cuhk.csci3310.csci3310project.sensor.StepCounterViewModel
 import edu.cuhk.csci3310.csci3310project.sensor.StepCounterUI
 import edu.cuhk.csci3310.csci3310project.ui.theme.CSCI3310ProjectTheme
@@ -85,16 +89,5 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MainScreen(activity: MainActivity) {
-    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            verticalArrangement = Arrangement.Center
-        ) {
-            StepCounterUI(activity.stepCounterViewModel)
-            Spacer(modifier = Modifier.height(32.dp))
-            AlarmTest(activity, innerPadding)
-        }
-    }
+    LocationSetScreen()
 }
