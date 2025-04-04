@@ -12,14 +12,23 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import edu.cuhk.csci3310.csci3310project.alarm.AlarmPermission
 import edu.cuhk.csci3310.csci3310project.alarm.AlarmTest
+import edu.cuhk.csci3310.csci3310project.sensor.StepCounterViewModel
+import edu.cuhk.csci3310.csci3310project.sensor.StepCounterUI
 import edu.cuhk.csci3310.csci3310project.ui.theme.CSCI3310ProjectTheme
 
 class MainActivity : ComponentActivity() {
+    lateinit var stepCounterViewModel: StepCounterViewModel
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.d("MainActivity", "onCreate called")
+        
+        // 初始化计步器
+        stepCounterViewModel = StepCounterViewModel()
+        stepCounterViewModel.initialize(this)
         
         // 初始化权限请求启动器
         AlarmPermission.initializePermissionLaunchers(this)
@@ -55,6 +64,16 @@ class MainActivity : ComponentActivity() {
         AlarmPermission.checkAndRequestPermissions(this)
     }
 
+    override fun onResume() {
+        super.onResume()
+        stepCounterViewModel.start()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        stepCounterViewModel.stop()
+    }
+
     fun isStoragePermissionGranted(): Boolean {
         return AlarmPermission.isStoragePermissionGranted()
     }
@@ -67,6 +86,15 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainScreen(activity: MainActivity) {
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-        AlarmTest(activity, innerPadding)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+            verticalArrangement = Arrangement.Center
+        ) {
+            StepCounterUI(activity.stepCounterViewModel)
+            Spacer(modifier = Modifier.height(32.dp))
+            AlarmTest(activity, innerPadding)
+        }
     }
 }
