@@ -33,6 +33,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import edu.cuhk.csci3310.csci3310project.R
+import edu.cuhk.csci3310.csci3310project.screen.uiComponent.ComparisonTextField
 import edu.cuhk.csci3310.csci3310project.ui.theme.CSCI3310ProjectTheme
 
 @OptIn(ExperimentalMaterial3Api::class)

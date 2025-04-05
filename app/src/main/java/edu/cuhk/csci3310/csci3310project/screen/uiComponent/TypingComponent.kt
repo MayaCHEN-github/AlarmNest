@@ -1,4 +1,4 @@
-package edu.cuhk.csci3310.csci3310project.screen
+package edu.cuhk.csci3310.csci3310project.screen.uiComponent
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
