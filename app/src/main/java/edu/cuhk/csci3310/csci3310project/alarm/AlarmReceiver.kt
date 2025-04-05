@@ -42,12 +42,12 @@ class AlarmReceiver : BroadcastReceiver() {
                     
                     // 获取闹钟信息
                     val alarmId = intent.getLongExtra("alarm_id", -1)
+                    val isSubAlarm = intent.getBooleanExtra("is_sub_alarm", false)
                     val alarmLabel = intent.getStringExtra("alarm_label") ?: "闹钟提醒"
-                    Log.d(TAG, "闹钟信息 - ID: $alarmId, 标签: $alarmLabel")
+                    Log.d(TAG, "闹钟信息 - ID: $alarmId, 是否子闹钟: $isSubAlarm, 标签: $alarmLabel")
                     
                     // 启动前台服务
-                    startForegroundService(context, alarmId, alarmLabel)
-                    
+                    startForegroundService(context, alarmId, alarmLabel, isSubAlarm)
                 }
             }
         } catch (e: Exception) {
@@ -77,7 +77,7 @@ class AlarmReceiver : BroadcastReceiver() {
         }
     }
 
-    private fun startForegroundService(context: Context, alarmId: Long, alarmLabel: String) {
+    private fun startForegroundService(context: Context, alarmId: Long, alarmLabel: String, isSubAlarm: Boolean = false) {
         Log.d(TAG, "准备启动前台服务")
         
         try {
@@ -91,6 +91,7 @@ class AlarmReceiver : BroadcastReceiver() {
             val serviceIntent = Intent(context, AlarmService::class.java).apply {
                 putExtra("alarm_id", alarmId)
                 putExtra("alarm_label", alarmLabel)
+                putExtra("is_sub_alarm", isSubAlarm)
                 putExtra("send_broadcast", true)
             }
 
@@ -101,11 +102,9 @@ class AlarmReceiver : BroadcastReceiver() {
         }
     }
 
-
     private fun stopAlarm(context: Context) {
         try {
             Log.d(TAG, "准备停止闹钟")
-            
             
             // 取消通知
             with(NotificationManagerCompat.from(context)) {

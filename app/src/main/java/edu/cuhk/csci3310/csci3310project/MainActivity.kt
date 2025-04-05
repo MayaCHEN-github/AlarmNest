@@ -123,11 +123,20 @@ class MainActivity : ComponentActivity() {
                     }
                     composable("alarm_screen") {
                         val alarmId = intent?.getLongExtra("alarm_id", -1) ?: -1
+                        val isSubAlarm = intent?.getBooleanExtra("is_sub_alarm", false) ?: false
                         var alarm by remember { mutableStateOf<Alarm?>(null) }
                         
                         LaunchedEffect(alarmId) {
                             if (alarmId != -1L) {
-                                alarm = AlarmDatabaseFacade.getAlarmById(this@MainActivity, alarmId)
+                                alarm = if (isSubAlarm) {
+                                    // 如果是子闹钟，获取父闹钟
+                                    val subAlarm = AlarmDatabaseFacade.getSubAlarmById(this@MainActivity, alarmId)
+                                    if (subAlarm != null) {
+                                        AlarmDatabaseFacade.getAlarmById(this@MainActivity, subAlarm.parentAlarmId)
+                                    } else null
+                                } else {
+                                    AlarmDatabaseFacade.getAlarmById(this@MainActivity, alarmId)
+                                }
                             }
                         }
                         

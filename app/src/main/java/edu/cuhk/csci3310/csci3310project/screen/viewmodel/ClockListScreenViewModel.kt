@@ -367,6 +367,20 @@ open class ClockListScreenViewModel(private val context: Context) : ViewModel() 
                 android.util.Log.d("ClockListScreenViewModel", "每日闹钟创建成功: id=$dailyAlarmId")
                 
                 if (dailyAlarmId > 0) {
+                    // 等待一小段时间确保闹钟保存到数据库
+                    kotlinx.coroutines.delay(100)
+                    
+                    // 获取新创建的闹钟
+                    val dailyAlarm = AlarmDatabaseFacade.getAlarmById(context, dailyAlarmId)
+                    if (dailyAlarm != null) {
+                        android.util.Log.d("ClockListScreenViewModel", "获取到每日闹钟: $dailyAlarm")
+                        // 设置系统闹钟
+                        AlarmManager.setAlarm(context, dailyCalendar, dailyAlarm)
+                        android.util.Log.d("ClockListScreenViewModel", "已设置每日闹钟的系统闹钟")
+                    } else {
+                        android.util.Log.e("ClockListScreenViewModel", "获取每日闹钟失败")
+                    }
+                    
                     // 添加子闹钟
                     android.util.Log.d("ClockListScreenViewModel", "开始添加子闹钟")
                     
@@ -397,11 +411,13 @@ open class ClockListScreenViewModel(private val context: Context) : ViewModel() 
                 val weekdayCalendar = Calendar.getInstance().apply {
                     set(Calendar.HOUR_OF_DAY, 9)
                     set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
                 }
                 
                 android.util.Log.d("ClockListScreenViewModel", "创建工作日闹钟: time=09:00")
                 
-                AlarmDatabaseFacade.addAlarm(
+                val weekdayAlarmId = AlarmDatabaseFacade.addAlarm(
                     context = context,
                     calendar = weekdayCalendar,
                     repeatType = RepeatType.WEEKDAYS,
@@ -409,15 +425,33 @@ open class ClockListScreenViewModel(private val context: Context) : ViewModel() 
                     dismissType = DismissType.TEXT_ALARM
                 )
                 
+                if (weekdayAlarmId > 0) {
+                    // 等待一小段时间确保闹钟保存到数据库
+                    kotlinx.coroutines.delay(100)
+                    
+                    // 获取新创建的闹钟
+                    val weekdayAlarm = AlarmDatabaseFacade.getAlarmById(context, weekdayAlarmId)
+                    if (weekdayAlarm != null) {
+                        android.util.Log.d("ClockListScreenViewModel", "获取到工作日闹钟: $weekdayAlarm")
+                        // 设置系统闹钟
+                        AlarmManager.setAlarm(context, weekdayCalendar, weekdayAlarm)
+                        android.util.Log.d("ClockListScreenViewModel", "已设置工作日闹钟的系统闹钟")
+                    } else {
+                        android.util.Log.e("ClockListScreenViewModel", "获取工作日闹钟失败")
+                    }
+                }
+                
                 // 创建周末闹钟
                 val weekendCalendar = Calendar.getInstance().apply {
                     set(Calendar.HOUR_OF_DAY, 10)
                     set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
                 }
                 
                 android.util.Log.d("ClockListScreenViewModel", "创建周末闹钟: time=10:00")
                 
-                AlarmDatabaseFacade.addAlarm(
+                val weekendAlarmId = AlarmDatabaseFacade.addAlarm(
                     context = context,
                     calendar = weekendCalendar,
                     repeatType = RepeatType.WEEKENDS,
@@ -425,15 +459,33 @@ open class ClockListScreenViewModel(private val context: Context) : ViewModel() 
                     dismissType = DismissType.TEXT_ALARM
                 )
                 
+                if (weekendAlarmId > 0) {
+                    // 等待一小段时间确保闹钟保存到数据库
+                    kotlinx.coroutines.delay(100)
+                    
+                    // 获取新创建的闹钟
+                    val weekendAlarm = AlarmDatabaseFacade.getAlarmById(context, weekendAlarmId)
+                    if (weekendAlarm != null) {
+                        android.util.Log.d("ClockListScreenViewModel", "获取到周末闹钟: $weekendAlarm")
+                        // 设置系统闹钟
+                        AlarmManager.setAlarm(context, weekendCalendar, weekendAlarm)
+                        android.util.Log.d("ClockListScreenViewModel", "已设置周末闹钟的系统闹钟")
+                    } else {
+                        android.util.Log.e("ClockListScreenViewModel", "获取周末闹钟失败")
+                    }
+                }
+                
                 // 创建自定义闹钟(周一、周三、周五)
                 val customCalendar = Calendar.getInstance().apply {
                     set(Calendar.HOUR_OF_DAY, 15)
                     set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
                 }
                 
                 android.util.Log.d("ClockListScreenViewModel", "创建自定义闹钟: time=15:00, days=1,3,5")
                 
-                AlarmDatabaseFacade.addAlarm(
+                val customAlarmId = AlarmDatabaseFacade.addAlarm(
                     context = context,
                     calendar = customCalendar,
                     repeatType = RepeatType.CUSTOM,
@@ -442,21 +494,55 @@ open class ClockListScreenViewModel(private val context: Context) : ViewModel() 
                     dismissType = DismissType.TEXT_ALARM
                 )
                 
+                if (customAlarmId > 0) {
+                    // 等待一小段时间确保闹钟保存到数据库
+                    kotlinx.coroutines.delay(100)
+                    
+                    // 获取新创建的闹钟
+                    val customAlarm = AlarmDatabaseFacade.getAlarmById(context, customAlarmId)
+                    if (customAlarm != null) {
+                        android.util.Log.d("ClockListScreenViewModel", "获取到自定义闹钟: $customAlarm")
+                        // 设置系统闹钟
+                        AlarmManager.setAlarm(context, customCalendar, customAlarm)
+                        android.util.Log.d("ClockListScreenViewModel", "已设置自定义闹钟的系统闹钟")
+                    } else {
+                        android.util.Log.e("ClockListScreenViewModel", "获取自定义闹钟失败")
+                    }
+                }
+                
                 // 创建单次闹钟
                 val onceCalendar = Calendar.getInstance().apply {
                     set(Calendar.HOUR_OF_DAY, 22)
                     set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
                 }
                 
                 android.util.Log.d("ClockListScreenViewModel", "创建单次闹钟: time=22:00")
                 
-                AlarmDatabaseFacade.addAlarm(
+                val onceAlarmId = AlarmDatabaseFacade.addAlarm(
                     context = context,
                     calendar = onceCalendar,
                     repeatType = RepeatType.ONCE,
                     label = "One-time Alarm",
                     dismissType = DismissType.TEXT_ALARM
                 )
+                
+                if (onceAlarmId > 0) {
+                    // 等待一小段时间确保闹钟保存到数据库
+                    kotlinx.coroutines.delay(100)
+                    
+                    // 获取新创建的闹钟
+                    val onceAlarm = AlarmDatabaseFacade.getAlarmById(context, onceAlarmId)
+                    if (onceAlarm != null) {
+                        android.util.Log.d("ClockListScreenViewModel", "获取到单次闹钟: $onceAlarm")
+                        // 设置系统闹钟
+                        AlarmManager.setAlarm(context, onceCalendar, onceAlarm)
+                        android.util.Log.d("ClockListScreenViewModel", "已设置单次闹钟的系统闹钟")
+                    } else {
+                        android.util.Log.e("ClockListScreenViewModel", "获取单次闹钟失败")
+                    }
+                }
                 
                 android.util.Log.d("ClockListScreenViewModel", "所有测试数据创建完成")
                 

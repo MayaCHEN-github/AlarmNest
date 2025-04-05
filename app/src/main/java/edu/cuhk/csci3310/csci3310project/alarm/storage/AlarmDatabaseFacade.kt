@@ -14,6 +14,8 @@ import java.util.*
 import java.io.File
 import java.util.concurrent.locks.ReentrantLock
 import edu.cuhk.csci3310.csci3310project.MainActivity
+import edu.cuhk.csci3310.csci3310project.alarm.SubAlarmManager
+import edu.cuhk.csci3310.csci3310project.alarm.AlarmManager
 
 // 对数据库进行封装，提供统一的访问接口
 object AlarmDatabaseFacade {
@@ -181,6 +183,8 @@ object AlarmDatabaseFacade {
     // 更新闹钟
     suspend fun updateAlarm(context: Context, alarm: Alarm) {
         try {
+            Log.d(TAG, "开始更新主闹钟: $alarm")
+            
             val repo = getRepository(context)
             if (repo == null) {
                 Log.e(TAG, "update alarm更新闹钟失败：仓库不存在")
@@ -188,6 +192,27 @@ object AlarmDatabaseFacade {
             }
             
             repo.update(alarm)
+            
+            // 如果闹钟启用，重新设置所有闹钟
+            if (alarm.isEnabled) {
+                Log.d(TAG, "主闹钟已启用，准备更新所有闹钟")
+                
+                // 重新设置主闹钟
+                val calendar = repo.createCalendarFromAlarm(alarm)
+                AlarmManager.setAlarm(context, calendar, alarm)
+                Log.d(TAG, "主闹钟系统闹钟已重新设置")
+                
+                // 重新设置所有子闹钟
+                repo.getSubAlarmsByParentId(alarm.id).collect { subAlarms ->
+                    Log.d(TAG, "获取到 ${subAlarms.size} 个子闹钟")
+                    subAlarms.forEach { subAlarm ->
+                        Log.d(TAG, "重新设置子闹钟: $subAlarm")
+                        SubAlarmManager.setSubAlarm(context, subAlarm, alarm)
+                    }
+                }
+            }
+            
+            Log.d(TAG, "主闹钟更新完成")
         } catch (e: Exception) {
             Log.e(TAG, "update alarm更新闹钟失败: ${e.message}", e)
         }
@@ -272,6 +297,13 @@ object AlarmDatabaseFacade {
                 return -1
             }
             
+            // 获取父闹钟
+            val parentAlarm = repo.getAlarmById(parentAlarmId)
+            if (parentAlarm == null) {
+                Log.e(TAG, "add sub alarm添加子闹钟失败：找不到父闹钟")
+                return -1
+            }
+            
             val subAlarm = repo.createSubAlarm(
                 parentAlarmId,
                 timeOffsetMinutes,
@@ -280,7 +312,16 @@ object AlarmDatabaseFacade {
                 absoluteTriggerTime
             )
             
-            repo.insertSubAlarm(subAlarm)
+            // 插入子闹钟并获取ID
+            val subAlarmId = repo.insertSubAlarm(subAlarm)
+            
+            // 如果父闹钟启用，则设置子闹钟触发
+            if (parentAlarm.isEnabled && subAlarmId > 0) {
+                val newSubAlarm = subAlarm.copy(id = subAlarmId)
+                SubAlarmManager.setSubAlarm(context, newSubAlarm, parentAlarm)
+            }
+            
+            subAlarmId
         } catch (e: Exception) {
             Log.e(TAG, "add sub alarm添加子闹钟失败: ${e.message}", e)
             -1
@@ -290,20 +331,39 @@ object AlarmDatabaseFacade {
     // 更新子闹钟
     suspend fun updateSubAlarm(context: Context, subAlarm: SubAlarm) {
         try {
-            android.util.Log.d(TAG, "开始更新子闹钟: $subAlarm")
+            Log.d(TAG, "开始更新子闹钟: $subAlarm")
             
             val repo = getRepository(context)
             if (repo == null) {
                 val error = "update sub alarm更新子闹钟失败：仓库不存在"
-                android.util.Log.e(TAG, error)
+                Log.e(TAG, error)
                 throw IllegalStateException(error)
             }
             
+            // 获取父闹钟
+            val parentAlarm = repo.getAlarmById(subAlarm.parentAlarmId)
+            if (parentAlarm == null) {
+                Log.e(TAG, "update sub alarm更新子闹钟失败：找不到父闹钟")
+                return
+            }
+            
+            Log.d(TAG, "获取到父闹钟: $parentAlarm")
+            
+            // 更新子闹钟
             repo.updateSubAlarm(subAlarm)
-            android.util.Log.d(TAG, "子闹钟更新成功")
+            
+            // 如果父闹钟启用，则重新设置子闹钟触发
+            if (parentAlarm.isEnabled) {
+                Log.d(TAG, "父闹钟已启用，设置子闹钟触发")
+                SubAlarmManager.setSubAlarm(context, subAlarm, parentAlarm)
+            } else {
+                Log.d(TAG, "父闹钟未启用，跳过设置子闹钟触发")
+            }
+            
+            Log.d(TAG, "子闹钟更新成功")
         } catch (e: Exception) {
-            android.util.Log.e(TAG, "update sub alarm更新子闹钟失败: ${e.message}", e)
-            throw e // 重新抛出异常，让调用者处理
+            Log.e(TAG, "update sub alarm更新子闹钟失败: ${e.message}", e)
+            throw e
         }
     }
     
@@ -441,6 +501,22 @@ object AlarmDatabaseFacade {
             backupDatabase(context, backupFile)
         } catch (e: Exception) {
             Log.e(TAG, "initialize database初始化数据库失败: ${e.message}", e)
+        }
+    }
+    
+    // 根据ID获取子闹钟
+    suspend fun getSubAlarmById(context: Context, id: Long): SubAlarm? {
+        return try {
+            val repo = getRepository(context)
+            if (repo == null) {
+                Log.e(TAG, "get sub alarm by id获取子闹钟失败：仓库不存在")
+                return null
+            }
+            
+            repo.getSubAlarmById(id)
+        } catch (e: Exception) {
+            Log.e(TAG, "get sub alarm by id获取子闹钟失败: ${e.message}", e)
+            null
         }
     }
 } 

@@ -248,6 +248,7 @@ class AlarmService : Service() {
     private fun createNotification(): Notification {
         try {
             val alarmId = currentIntent?.getLongExtra("alarm_id", -1) ?: -1
+            val isSubAlarm = currentIntent?.getBooleanExtra("is_sub_alarm", false) ?: false
             val alarmLabel = currentIntent?.getStringExtra("alarm_label") ?: "闹钟提醒"
             
             // 创建打开应用的Intent
@@ -255,6 +256,7 @@ class AlarmService : Service() {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 putExtra("navigate_to", "alarm_screen")
                 putExtra("alarm_id", alarmId)
+                putExtra("is_sub_alarm", isSubAlarm)
                 putExtra("alarm_label", alarmLabel)
             }
             val openAppPendingIntent = PendingIntent.getActivity(
@@ -267,13 +269,14 @@ class AlarmService : Service() {
             // 发送广播来触发导航
             val broadcastIntent = Intent("edu.cuhk.csci3310.csci3310project.NAVIGATE_TO_ALARM").apply {
                 putExtra("alarm_id", alarmId)
+                putExtra("is_sub_alarm", isSubAlarm)
                 putExtra("alarm_label", alarmLabel)
             }
             sendBroadcast(broadcastIntent)
 
             return NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(android.R.drawable.ic_dialog_alert)
-                .setContentTitle(alarmLabel)
+                .setContentTitle(if (isSubAlarm) "子闹钟: $alarmLabel" else alarmLabel)
                 .setContentText("到设定的时间了！")
                 .setPriority(NotificationCompat.PRIORITY_MAX)
                 .setCategory(NotificationCompat.CATEGORY_ALARM)
