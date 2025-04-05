@@ -1,19 +1,28 @@
 package edu.cuhk.csci3310.csci3310project.screen.uiComponent
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -27,7 +36,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import edu.cuhk.csci3310.csci3310project.R
+import edu.cuhk.csci3310.csci3310project.alarm.storage.RepeatType
 import edu.cuhk.csci3310.csci3310project.screen.model.SubAlarmData
 import edu.cuhk.csci3310.csci3310project.ui.theme.CSCI3310ProjectTheme
 
@@ -46,10 +57,13 @@ fun NextAlarmText(
 @Composable
 fun WeekdayRow(
     selectedDays: List<Boolean> = List(7) { false },
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    onClick: (() -> Unit)? = null
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = enabled && onClick != null) { onClick?.invoke() },
         horizontalArrangement = Arrangement.Start
     ) {
         val days = listOf("S","M","T","W","T","F","S")
@@ -69,13 +83,16 @@ fun WeekdayRow(
 @Composable
 fun TimeDisplay(
     time: String,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    onClick: () -> Unit = {}
 ) {
     Text(
         text = time,
         fontSize = 48.sp,
         fontWeight = FontWeight.Normal,
-        color = if (enabled) Color.White else Color.Gray
+        color = if (enabled) Color.White else Color.Gray,
+        modifier = Modifier
+            .clickable { onClick() }
     )
 }
 
@@ -223,16 +240,259 @@ fun SubAlarmList(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun WeekdaySelectionDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit,
+    initialCustomDays: String? = null
+) {
+    // 根据传入的customDays初始化selectedDays
+    var selectedDays by remember(initialCustomDays) { 
+        mutableStateOf(
+            if (initialCustomDays != null) {
+                val days = initialCustomDays.split(",").mapNotNull { it.toIntOrNull() }
+                List(7) { index ->
+                    val dayNumber = if (index == 0) 7 else index
+                    dayNumber in days
+                }
+            } else {
+                List(7) { false }
+            }
+        )
+    }
+    
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = Color.White
+            )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = "Select Repeat Days",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // 星期选项
+                listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday").forEachIndexed { index, day ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = selectedDays[index],
+                            onCheckedChange = { checked ->
+                                selectedDays = selectedDays.toMutableList().apply {
+                                    set(index, checked)
+                                }
+                            }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = day,
+                            color = Color.Black
+                        )
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // 确认和取消按钮
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text("Cancel", color = Color.Black)
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    TextButton(
+                        onClick = {
+                            // 将选中的星期转换为字符串,如"1,2,3"表示周一、周二、周三
+                            val selectedDayNumbers = selectedDays
+                                .mapIndexed { index, selected -> if (selected) index + 1 else null }
+                                .filterNotNull()
+                                .joinToString(",")
+                            if (selectedDayNumbers.isNotEmpty()) {
+                                onConfirm(selectedDayNumbers)
+                                onDismiss()
+                            }
+                        }
+                    ) {
+                        Text("Confirm", color = Color.Black)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun RepeatTypeDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (RepeatType, String?) -> Unit,
+    initialRepeatType: RepeatType = RepeatType.ONCE,
+    initialCustomDays: String? = null
+) {
+    var selectedType by remember(initialRepeatType) { mutableStateOf(initialRepeatType) }
+    var showWeekdayDialog by remember { mutableStateOf(false) }
+    
+    // 星期选择对话框
+    if (showWeekdayDialog) {
+        WeekdaySelectionDialog(
+            onDismiss = { showWeekdayDialog = false },
+            onConfirm = { days ->
+                onConfirm(RepeatType.CUSTOM, days)
+                onDismiss()
+            },
+            initialCustomDays = initialCustomDays
+        )
+    }
+    
+    // 主对话框
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = Color.White
+            )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = "Select Repeat Mode",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // 重复模式选项
+                listOf(
+                    RepeatType.ONCE,
+                    RepeatType.DAILY,
+                    RepeatType.WEEKDAYS,
+                    RepeatType.WEEKENDS,
+                    RepeatType.CUSTOM
+                ).forEach { type ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = selectedType == type,
+                            onClick = { 
+                                selectedType = type
+                                if (type == RepeatType.CUSTOM) {
+                                    showWeekdayDialog = true
+                                }
+                            },
+                            colors = RadioButtonDefaults.colors(
+                                selectedColor = Color.Black,
+                                unselectedColor = Color.Gray
+                            )
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = when(type) {
+                                RepeatType.ONCE -> "Once"
+                                RepeatType.DAILY -> "Daily"
+                                RepeatType.WEEKDAYS -> "Weekdays"
+                                RepeatType.WEEKENDS -> "Weekends"
+                                RepeatType.CUSTOM -> "Custom"
+                                else -> ""
+                            },
+                            color = Color.Black
+                        )
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // 确认和取消按钮
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text("Cancel", color = Color.Black)
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    TextButton(
+                        onClick = {
+                            if (selectedType == RepeatType.CUSTOM) {
+                                showWeekdayDialog = true
+                            } else {
+                                onConfirm(selectedType, null)
+                                onDismiss()
+                            }
+                        }
+                    ) {
+                        Text("Confirm", color = Color.Black)
+                    }
+                }
+            }
+        }
+    }
+}
+
 @Composable
 fun ClockItem(
     time: String = "08:00",
     description: String = "Wake-up alarm",
     initialEnabled: Boolean = true,
     subAlarms: List<SubAlarmData> = emptyList(),
-    onToggleEnabled: ((Boolean) -> Unit)? = null
-){
+    repeatType: RepeatType = RepeatType.ONCE,
+    customDays: String? = null,
+    onTimeClick: () -> Unit = {},
+    onToggleEnabled: (Boolean) -> Unit = {},
+    onRepeatTypeChanged: (RepeatType, String?) -> Unit = { _, _ -> }
+) {
     var isEnabled by remember { mutableStateOf(initialEnabled) }
-    val selectedDays = listOf(true, true, true, true, true, false, false)
+    var showRepeatDialog by remember { mutableStateOf(false) }
+    
+    // 根据repeatType和customDays生成selectedDays
+    val selectedDays = remember(repeatType, customDays) {
+        when (repeatType) {
+            RepeatType.ONCE -> List(7) { false }
+            RepeatType.DAILY -> List(7) { true }
+            RepeatType.WEEKDAYS -> List(7) { index -> index in 1..5 } // 1-5是周一到周五
+            RepeatType.WEEKENDS -> List(7) { index -> index == 0 || index == 6 } // 0和6是周六和周日
+            RepeatType.CUSTOM -> {
+                val days = customDays?.split(",")?.mapNotNull { it.toIntOrNull() } ?: emptyList()
+                List(7) { index -> 
+                    // 注意: index从0开始(周日到周六),而days中的数字从1开始(周一到周日)
+                    // 所以需要将index转换为对应的星期数字
+                    val dayNumber = if (index == 0) 7 else index // 周日是7,周一是1
+                    dayNumber in days
+                }
+            }
+            else -> List(7) { false }
+        }
+    }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -246,8 +506,21 @@ fun ClockItem(
             // 星期显示
             WeekdayRow(
                 selectedDays = selectedDays,
-                enabled = isEnabled
+                enabled = isEnabled,
+                onClick = { showRepeatDialog = true }
             )
+            
+            // 重复模式选择对话框
+            if (showRepeatDialog) {
+                RepeatTypeDialog(
+                    onDismiss = { showRepeatDialog = false },
+                    onConfirm = { repeatType, customDays ->
+                        onRepeatTypeChanged.invoke(repeatType, customDays)
+                    },
+                    initialRepeatType = repeatType,
+                    initialCustomDays = customDays
+                )
+            }
             
             // 时间和开关
             Row(
@@ -257,7 +530,8 @@ fun ClockItem(
             ) {
                 TimeDisplay(
                     time = time,
-                    enabled = isEnabled
+                    enabled = isEnabled,
+                    onClick = onTimeClick
                 )
                 Row(
                     verticalAlignment = Alignment.CenterVertically
@@ -270,7 +544,7 @@ fun ClockItem(
                         checked = isEnabled,
                         onCheckedChange = { newValue ->
                             isEnabled = newValue
-                            onToggleEnabled?.invoke(newValue)
+                            onToggleEnabled.invoke(newValue)
                         },
                         colors = SwitchDefaults.colors(
                             uncheckedThumbColor = Color.Gray,

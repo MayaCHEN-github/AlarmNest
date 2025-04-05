@@ -34,14 +34,19 @@ open class ClockListScreenViewModel(private val context: Context) : ViewModel() 
     private fun loadAlarms() {
         viewModelScope.launch {
             try {
+                android.util.Log.d("ClockListScreenViewModel", "开始加载闹钟数据")
                 _uiState.update { it.copy(isLoading = true) }
                 
                 // 获取所有闹钟
                 AlarmDatabaseFacade.getAllAlarms(context)
                     .collect { alarms ->
+                        android.util.Log.d("ClockListScreenViewModel", "从数据库获取到闹钟: $alarms")
+                        
                         val alarmDataList = alarms.map { alarm ->
                             convertToAlarmData(alarm)
                         }
+                        
+                        android.util.Log.d("ClockListScreenViewModel", "转换后的闹钟数据列表: $alarmDataList")
                         
                         _uiState.update { 
                             it.copy(
@@ -50,8 +55,11 @@ open class ClockListScreenViewModel(private val context: Context) : ViewModel() 
                                 isLoading = false
                             )
                         }
+                        
+                        android.util.Log.d("ClockListScreenViewModel", "UI状态已更新")
                     }
             } catch (e: Exception) {
+                android.util.Log.e("ClockListScreenViewModel", "加载闹钟失败", e)
                 _uiState.update { 
                     it.copy(
                         error = "加载闹钟失败: ${e.message}",
@@ -64,6 +72,8 @@ open class ClockListScreenViewModel(private val context: Context) : ViewModel() 
     
     // 转换Alarm实体到AlarmData
     private suspend fun convertToAlarmData(alarm: Alarm): AlarmData {
+        android.util.Log.d("ClockListScreenViewModel", "转换Alarm到AlarmData: $alarm")
+        
         // 获取子闹钟
         val subAlarms = AlarmDatabaseFacade.getSubAlarms(context, alarm.id)
             .first() // 获取第一个值
@@ -71,12 +81,20 @@ open class ClockListScreenViewModel(private val context: Context) : ViewModel() 
                 convertToSubAlarmData(subAlarm, alarm)
             }
         
-        return AlarmData(
+        val alarmData = AlarmData(
+            id = alarm.id,
             time = String.format("%02d:%02d", alarm.hour, alarm.minute),
             description = alarm.label,
             initialEnabled = alarm.isEnabled,
-            subAlarms = subAlarms
+            subAlarms = subAlarms,
+            repeatType = alarm.repeatType,
+            customDays = alarm.customDays,
+            dayOfMonth = alarm.dayOfMonth,
+            month = alarm.month
         )
+        
+        android.util.Log.d("ClockListScreenViewModel", "转换后的AlarmData: $alarmData")
+        return alarmData
     }
     
     // 转换SubAlarm实体到SubAlarmData
@@ -168,6 +186,183 @@ open class ClockListScreenViewModel(private val context: Context) : ViewModel() 
             } catch (e: Exception) {
                 _uiState.update { 
                     it.copy(error = "更新闹钟状态失败: ${e.message}")
+                }
+            }
+        }
+    }
+    
+    // 更新闹钟重复模式
+    fun updateAlarmRepeatType(alarm: Alarm, repeatType: RepeatType, customDays: String?) {
+        viewModelScope.launch {
+            try {
+                android.util.Log.d("ClockListScreenViewModel", "开始更新闹钟重复模式: alarmId=${alarm.id}, repeatType=$repeatType, customDays=$customDays")
+                
+                val updatedAlarm = when(repeatType) {
+                    RepeatType.MONTHLY -> alarm.copy(
+                        repeatType = repeatType,
+                        customDays = null,
+                        dayOfMonth = customDays?.toIntOrNull(),
+                        month = null
+                    )
+                    RepeatType.YEARLY -> {
+                        val (month, day) = customDays?.split(",")?.map { it.toIntOrNull() } ?: listOf(null, null)
+                        alarm.copy(
+                            repeatType = repeatType,
+                            customDays = null,
+                            dayOfMonth = day,
+                            month = month
+                        )
+                    }
+                    else -> alarm.copy(
+                        repeatType = repeatType,
+                        customDays = customDays,
+                        dayOfMonth = null,
+                        month = null
+                    )
+                }
+                
+                android.util.Log.d("ClockListScreenViewModel", "更新后的闹钟数据: $updatedAlarm")
+                AlarmDatabaseFacade.updateAlarm(context, updatedAlarm)
+                android.util.Log.d("ClockListScreenViewModel", "数据库更新成功")
+                
+                // 重新加载闹钟列表以确保UI更新
+                loadAlarms()
+            } catch (e: Exception) {
+                android.util.Log.e("ClockListScreenViewModel", "更新闹钟重复模式失败", e)
+                _uiState.update { 
+                    it.copy(error = "更新闹钟重复模式失败: ${e.message}")
+                }
+            }
+        }
+    }
+    
+    // 更新闹钟时间
+    fun updateAlarmTime(alarm: Alarm, hour: Int, minute: Int) {
+        viewModelScope.launch {
+            try {
+                android.util.Log.d("ClockListScreenViewModel", "开始更新闹钟时间: alarmId=${alarm.id}, hour=$hour, minute=$minute")
+                
+                val updatedAlarm = alarm.copy(
+                    hour = hour,
+                    minute = minute
+                )
+                
+                android.util.Log.d("ClockListScreenViewModel", "更新后的闹钟数据: $updatedAlarm")
+                AlarmDatabaseFacade.updateAlarm(context, updatedAlarm)
+                android.util.Log.d("ClockListScreenViewModel", "数据库更新成功")
+                
+                // 重新加载闹钟列表以确保UI更新
+                loadAlarms()
+            } catch (e: Exception) {
+                android.util.Log.e("ClockListScreenViewModel", "更新闹钟时间失败", e)
+                _uiState.update { 
+                    it.copy(error = "更新闹钟时间失败: ${e.message}")
+                }
+            }
+        }
+    }
+    
+    // 创建测试数据
+    fun createTestData() {
+        viewModelScope.launch {
+            try {
+                // 创建每日闹钟
+                val dailyCalendar = Calendar.getInstance().apply {
+                    set(Calendar.HOUR_OF_DAY, 8)
+                    set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }
+                
+                val dailyAlarmId = AlarmDatabaseFacade.addAlarm(
+                    context = context,
+                    calendar = dailyCalendar,
+                    repeatType = RepeatType.DAILY,
+                    label = "Morning Alarm",
+                    dismissType = DismissType.TEXT_ALARM
+                )
+                
+                if (dailyAlarmId > 0) {
+                    // 添加子闹钟
+                    AlarmDatabaseFacade.addSubAlarm(
+                        context = context,
+                        parentAlarmId = dailyAlarmId,
+                        timeOffsetMinutes = -30,
+                        dismissType = DismissType.CHECKLIST_ALARM,
+                        label = "Prepare for the day"
+                    )
+                    
+                    AlarmDatabaseFacade.addSubAlarm(
+                        context = context,
+                        parentAlarmId = dailyAlarmId,
+                        timeOffsetMinutes = -15,
+                        dismissType = DismissType.WALK_ALARM,
+                        label = "Wake up and stretch"
+                    )
+                }
+                
+                // 创建工作日闹钟
+                val weekdayCalendar = Calendar.getInstance().apply {
+                    set(Calendar.HOUR_OF_DAY, 9)
+                    set(Calendar.MINUTE, 0)
+                }
+                
+                AlarmDatabaseFacade.addAlarm(
+                    context = context,
+                    calendar = weekdayCalendar,
+                    repeatType = RepeatType.WEEKDAYS,
+                    label = "Work Time",
+                    dismissType = DismissType.TEXT_ALARM
+                )
+                
+                // 创建周末闹钟
+                val weekendCalendar = Calendar.getInstance().apply {
+                    set(Calendar.HOUR_OF_DAY, 10)
+                    set(Calendar.MINUTE, 0)
+                }
+                
+                AlarmDatabaseFacade.addAlarm(
+                    context = context,
+                    calendar = weekendCalendar,
+                    repeatType = RepeatType.WEEKENDS,
+                    label = "Weekend Alarm",
+                    dismissType = DismissType.TEXT_ALARM
+                )
+                
+                // 创建自定义闹钟(周一、周三、周五)
+                val customCalendar = Calendar.getInstance().apply {
+                    set(Calendar.HOUR_OF_DAY, 15)
+                    set(Calendar.MINUTE, 0)
+                }
+                
+                AlarmDatabaseFacade.addAlarm(
+                    context = context,
+                    calendar = customCalendar,
+                    repeatType = RepeatType.CUSTOM,
+                    customDays = "1,3,5",
+                    label = "Custom Alarm",
+                    dismissType = DismissType.TEXT_ALARM
+                )
+                
+                // 创建单次闹钟
+                val onceCalendar = Calendar.getInstance().apply {
+                    set(Calendar.HOUR_OF_DAY, 22)
+                    set(Calendar.MINUTE, 0)
+                }
+                
+                AlarmDatabaseFacade.addAlarm(
+                    context = context,
+                    calendar = onceCalendar,
+                    repeatType = RepeatType.ONCE,
+                    label = "One-time Alarm",
+                    dismissType = DismissType.TEXT_ALARM
+                )
+                
+                // 重新加载闹钟列表
+                loadAlarms()
+            } catch (e: Exception) {
+                _uiState.update { 
+                    it.copy(error = "创建测试数据失败: ${e.message}")
                 }
             }
         }
