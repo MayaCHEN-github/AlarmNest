@@ -22,6 +22,8 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import edu.cuhk.csci3310.csci3310project.R
 import edu.cuhk.csci3310.csci3310project.ui.theme.CSCI3310ProjectTheme
 import androidx.compose.animation.core.Spring
@@ -30,15 +32,19 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontFamily
-
+import kotlinx.coroutines.delay
+import android.content.Intent
+import edu.cuhk.csci3310.csci3310project.alarm.AlarmReceiver
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AlarmOffScreen(previewScale: Float? = null){
+fun AlarmOffScreen(
+    navController: NavController,
+    previewScale: Float? = null,
+    onStopAlarm: () -> Unit = {}
+){
     CSCI3310ProjectTheme {
-        Scaffold(
-
-        ) { paddingValues ->
+        Scaffold() { paddingValues ->
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -58,6 +64,11 @@ fun AlarmOffScreen(previewScale: Float? = null){
 
                 LaunchedEffect(key1 = true) {
                     startAnimation = true
+                    onStopAlarm() // 停止闹铃
+                    delay(3000) // 等待2秒
+                    navController.navigate("clock_list_screen") {
+                        popUpTo(0) { inclusive = true } // 清除所有之前的导航栈
+                    }
                 }
 
                 Image(
@@ -72,9 +83,13 @@ fun AlarmOffScreen(previewScale: Float? = null){
                     fontSize = 26.sp
                 )
 
-
                 Button(
-                    onClick = { /*TODO*/ },
+                    onClick = { 
+                        onStopAlarm() // 停止闹铃
+                        navController.navigate("clock_list_screen") {
+                            popUpTo(0) { inclusive = true } // 清除所有之前的导航栈
+                        }
+                    },
                     modifier = Modifier.padding(top = 16.dp)
                 ) {
                     Text(
@@ -90,5 +105,5 @@ fun AlarmOffScreen(previewScale: Float? = null){
 @Preview(name = "动画结束状态")
 @Composable
 fun AlarmOffScreenPreviewEnd() {
-    AlarmOffScreen(previewScale = 1f)
+    AlarmOffScreen(navController = rememberNavController(), previewScale = 1f)
 }

@@ -16,7 +16,7 @@ import java.io.File
 // 数据库类，提供数据库访问接口。
 @Database(
     entities = [Alarm::class, SubAlarm::class], // 定义数据库当中包含的表
-    version = 4, // 数据库版本号
+    version = 5, // 数据库版本号
     exportSchema = true // 导出数据库架构，用于版本控制
 )
 abstract class AppDatabase : RoomDatabase() {

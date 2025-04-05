@@ -9,6 +9,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,11 +43,24 @@ fun ComparisonTextField(
     defaultColor: Color = Color.White,
     correctColor: Color = Color(0xFF4CAF50),
     wrongColor: Color = Color.Red,
-    onValueChange: (String) -> Unit = {}
+    onValueChange: (String) -> Unit = {},
+    onInputStateChange: (Boolean) -> Unit = {}
 ) {
     var inputText by remember { mutableStateOf(initialText) }
     val isTooLong = inputText.length > promptText.length
     val lineHeight = (fontSize * 1.25).sp
+
+    val isInputCorrect = remember(inputText, promptText) {
+        if (inputText.length < promptText.length) {
+            false
+        } else {
+            inputText.take(promptText.length) == promptText
+        }
+    }
+
+    LaunchedEffect(isInputCorrect) {
+        onInputStateChange(isInputCorrect)
+    }
 
     Box(
         modifier = modifier

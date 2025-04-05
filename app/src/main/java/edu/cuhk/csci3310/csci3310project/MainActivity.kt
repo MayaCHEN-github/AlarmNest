@@ -32,6 +32,7 @@ import edu.cuhk.csci3310.csci3310project.alarm.storage.Alarm
 import edu.cuhk.csci3310.csci3310project.alarm.storage.AlarmDatabaseFacade
 import edu.cuhk.csci3310.csci3310project.screen.AlarmOffScreen
 import edu.cuhk.csci3310.csci3310project.screen.AlarmScreen
+import edu.cuhk.csci3310.csci3310project.screen.AlarmTypingScreen
 import edu.cuhk.csci3310.csci3310project.screen.ClockListScreen
 import edu.cuhk.csci3310.csci3310project.screen.viewmodel.ClockListScreenViewModel
 import edu.cuhk.csci3310.csci3310project.sensor.StepCounterViewModel
@@ -44,8 +45,9 @@ class MainActivity : ComponentActivity() {
     private val navigationReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == "edu.cuhk.csci3310.csci3310project.NAVIGATE_TO_ALARM") {
-                // 检查当前路由，如果不是alarm_screen才跳转
-                if (navController.currentDestination?.route != "alarm_screen") {
+                // 只在特定界面才跳转到 alarm_screen
+                val currentRoute = navController.currentDestination?.route
+                if (currentRoute == "clock_list_screen") {
                     navController.navigate("alarm_screen") {
                         popUpTo("clock_list_screen") { inclusive = true }
                     }
@@ -130,6 +132,7 @@ class MainActivity : ComponentActivity() {
                         }
                         
                         AlarmScreen(
+                            navController = navController,
                             alarm = alarm,
                             onStartTask = {
                                 stopAlarm()
@@ -137,6 +140,15 @@ class MainActivity : ComponentActivity() {
                                     popUpTo("alarm_screen") { inclusive = true }
                                 }
                             }
+                        )
+                    }
+                    composable("typing_alarm_screen") {
+                        AlarmTypingScreen(navController = navController)
+                    }
+                    composable("alarm_off_screen") {
+                        AlarmOffScreen(
+                            navController = navController,
+                            onStopAlarm = { stopAlarm() }
                         )
                     }
                 }

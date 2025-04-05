@@ -1,8 +1,8 @@
 package edu.cuhk.csci3310.csci3310project.screen
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.Button
@@ -23,9 +22,14 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -40,7 +44,10 @@ import edu.cuhk.csci3310.csci3310project.ui.theme.CSCI3310ProjectTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AlarmTypingSettingScreen(navController: NavController){
+fun AlarmTypingScreen(navController: NavController) {
+    val context = LocalContext.current
+    var isInputCorrect by remember { mutableStateOf(false) }
+    
     CSCI3310ProjectTheme{
         Scaffold(
             topBar = {
@@ -72,32 +79,14 @@ fun AlarmTypingSettingScreen(navController: NavController){
                 Column(
                     modifier = Modifier.imePadding()
                 ) {
-                    TextButton(
-                        onClick = { /* TODO: Add action later */ },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 0.dp, vertical = 0.dp)
-                            .padding(bottom = 0.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Edit,
-                                contentDescription = "Edit",
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "Edit Text Examples",
-                                fontSize = 15.sp,
-                                fontFamily = FontFamily.Default,
-                                fontWeight = FontWeight.Light,
-                            )
-                        }
-                    }
                     Button(
-                        onClick = { /* TODO: Add action later */ },
+                        onClick = { 
+                            if (isInputCorrect) {
+                                navController.navigate("alarm_off_screen")
+                            } else {
+                                Toast.makeText(context, "输入不正确，请重新输入", Toast.LENGTH_SHORT).show()
+                            }
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 18.dp, vertical = 0.dp)
@@ -105,7 +94,7 @@ fun AlarmTypingSettingScreen(navController: NavController){
                         contentPadding = PaddingValues(vertical = 10.dp)
                     ) {
                         Text(
-                            text = "DONE SETTING!",
+                            text = "DONE TYPING!",
                             fontSize = 15.sp,
                             fontFamily = FontFamily.Default
                         )
@@ -128,7 +117,7 @@ fun AlarmTypingSettingScreen(navController: NavController){
                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
                 ) {
                     Text(
-                        text = "EXAMPLE",
+                        text = "TYPE THIS!",
                         fontFamily = FontFamily.Default,
                         fontSize = 14.sp
                     )
@@ -139,7 +128,8 @@ fun AlarmTypingSettingScreen(navController: NavController){
                 ComparisonTextField(
                     promptText = "The quick brown fox jumps over the lazy dog.",
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 15.dp),
-                    fontSize = 20
+                    fontSize = 20,
+                    onInputStateChange = { correct -> isInputCorrect = correct }
                 )
             }
         }
@@ -148,8 +138,8 @@ fun AlarmTypingSettingScreen(navController: NavController){
 
 @Preview
 @Composable
-fun PreviewAlarmTypingSettingScreen() {
+fun PreviewAlarmTypingScreen() {
     CSCI3310ProjectTheme {
-        AlarmTypingSettingScreen(navController = rememberNavController())
+        AlarmTypingScreen(navController = rememberNavController())
     }
 }
