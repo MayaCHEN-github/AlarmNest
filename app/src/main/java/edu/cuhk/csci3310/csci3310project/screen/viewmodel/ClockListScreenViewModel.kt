@@ -105,11 +105,7 @@ open class ClockListScreenViewModel(private val context: Context) : ViewModel() 
         val absMinutes = subAlarm.timeOffsetMinutes.absoluteValue
         val hours = absMinutes / 60
         val minutes = absMinutes % 60
-        val timeDiffStr = if (hours > 0) {
-            String.format("%s%d:%02d", timeDiff, hours, minutes)
-        } else {
-            String.format("%s%d", timeDiff, minutes)
-        }
+        val timeDiffStr = String.format("%s%02d:%02d", timeDiff, hours, minutes)
         
         // 确定触发类型
         val triggerType = when (subAlarm.dismissType) {
@@ -120,6 +116,7 @@ open class ClockListScreenViewModel(private val context: Context) : ViewModel() 
         }
         
         return SubAlarmData(
+            id = subAlarm.id,
             timeDiff = timeDiffStr,
             description = subAlarm.label,
             triggerType = triggerType,
@@ -347,6 +344,8 @@ open class ClockListScreenViewModel(private val context: Context) : ViewModel() 
     fun createTestData() {
         viewModelScope.launch {
             try {
+                android.util.Log.d("ClockListScreenViewModel", "开始创建测试数据")
+                
                 // 创建每日闹钟
                 val dailyCalendar = Calendar.getInstance().apply {
                     set(Calendar.HOUR_OF_DAY, 8)
@@ -354,6 +353,8 @@ open class ClockListScreenViewModel(private val context: Context) : ViewModel() 
                     set(Calendar.SECOND, 0)
                     set(Calendar.MILLISECOND, 0)
                 }
+                
+                android.util.Log.d("ClockListScreenViewModel", "创建每日闹钟: time=08:00")
                 
                 val dailyAlarmId = AlarmDatabaseFacade.addAlarm(
                     context = context,
@@ -363,9 +364,14 @@ open class ClockListScreenViewModel(private val context: Context) : ViewModel() 
                     dismissType = DismissType.TEXT_ALARM
                 )
                 
+                android.util.Log.d("ClockListScreenViewModel", "每日闹钟创建成功: id=$dailyAlarmId")
+                
                 if (dailyAlarmId > 0) {
                     // 添加子闹钟
-                    AlarmDatabaseFacade.addSubAlarm(
+                    android.util.Log.d("ClockListScreenViewModel", "开始添加子闹钟")
+                    
+                    // 提前30分钟的清单闹钟
+                    val subAlarm1Id = AlarmDatabaseFacade.addSubAlarm(
                         context = context,
                         parentAlarmId = dailyAlarmId,
                         timeOffsetMinutes = -30,
@@ -373,13 +379,18 @@ open class ClockListScreenViewModel(private val context: Context) : ViewModel() 
                         label = "Prepare for the day"
                     )
                     
-                    AlarmDatabaseFacade.addSubAlarm(
+                    android.util.Log.d("ClockListScreenViewModel", "子闹钟1创建成功: id=$subAlarm1Id, timeOffset=-30")
+                    
+                    // 提前15分钟的走路闹钟
+                    val subAlarm2Id = AlarmDatabaseFacade.addSubAlarm(
                         context = context,
                         parentAlarmId = dailyAlarmId,
                         timeOffsetMinutes = -15,
                         dismissType = DismissType.WALK_ALARM,
                         label = "Wake up and stretch"
                     )
+                    
+                    android.util.Log.d("ClockListScreenViewModel", "子闹钟2创建成功: id=$subAlarm2Id, timeOffset=-15")
                 }
                 
                 // 创建工作日闹钟
@@ -387,6 +398,8 @@ open class ClockListScreenViewModel(private val context: Context) : ViewModel() 
                     set(Calendar.HOUR_OF_DAY, 9)
                     set(Calendar.MINUTE, 0)
                 }
+                
+                android.util.Log.d("ClockListScreenViewModel", "创建工作日闹钟: time=09:00")
                 
                 AlarmDatabaseFacade.addAlarm(
                     context = context,
@@ -402,6 +415,8 @@ open class ClockListScreenViewModel(private val context: Context) : ViewModel() 
                     set(Calendar.MINUTE, 0)
                 }
                 
+                android.util.Log.d("ClockListScreenViewModel", "创建周末闹钟: time=10:00")
+                
                 AlarmDatabaseFacade.addAlarm(
                     context = context,
                     calendar = weekendCalendar,
@@ -415,6 +430,8 @@ open class ClockListScreenViewModel(private val context: Context) : ViewModel() 
                     set(Calendar.HOUR_OF_DAY, 15)
                     set(Calendar.MINUTE, 0)
                 }
+                
+                android.util.Log.d("ClockListScreenViewModel", "创建自定义闹钟: time=15:00, days=1,3,5")
                 
                 AlarmDatabaseFacade.addAlarm(
                     context = context,
@@ -431,6 +448,8 @@ open class ClockListScreenViewModel(private val context: Context) : ViewModel() 
                     set(Calendar.MINUTE, 0)
                 }
                 
+                android.util.Log.d("ClockListScreenViewModel", "创建单次闹钟: time=22:00")
+                
                 AlarmDatabaseFacade.addAlarm(
                     context = context,
                     calendar = onceCalendar,
@@ -439,11 +458,143 @@ open class ClockListScreenViewModel(private val context: Context) : ViewModel() 
                     dismissType = DismissType.TEXT_ALARM
                 )
                 
+                android.util.Log.d("ClockListScreenViewModel", "所有测试数据创建完成")
+                
                 // 重新加载闹钟列表
                 loadAlarms()
             } catch (e: Exception) {
+                android.util.Log.e("ClockListScreenViewModel", "创建测试数据失败", e)
                 _uiState.update { 
                     it.copy(error = "创建测试数据失败: ${e.message}")
+                }
+            }
+        }
+    }
+    
+    // 删除闹钟
+    fun deleteAlarm(alarm: Alarm) {
+        viewModelScope.launch {
+            try {
+                android.util.Log.d("ClockListScreenViewModel", "开始删除闹钟: alarmId=${alarm.id}")
+                
+                // 从数据库删除闹钟
+                AlarmDatabaseFacade.deleteAlarm(context, alarm)
+                
+                android.util.Log.d("ClockListScreenViewModel", "闹钟删除成功")
+                
+                // 重新加载闹钟列表以确保UI更新
+                loadAlarms()
+            } catch (e: Exception) {
+                android.util.Log.e("ClockListScreenViewModel", "删除闹钟失败", e)
+                _uiState.update { 
+                    it.copy(error = "删除闹钟失败: ${e.message}")
+                }
+            }
+        }
+    }
+    
+    // 删除子闹钟
+    fun deleteSubAlarm(parentAlarm: Alarm, subAlarm: SubAlarm) {
+        viewModelScope.launch {
+            try {
+                android.util.Log.d("ClockListScreenViewModel", "开始删除子闹钟: subAlarmId=${subAlarm.id}")
+                
+                // 从数据库删除子闹钟
+                AlarmDatabaseFacade.deleteSubAlarm(context, subAlarm)
+                
+                android.util.Log.d("ClockListScreenViewModel", "子闹钟删除成功")
+                
+                // 重新加载闹钟列表以确保UI更新
+                loadAlarms()
+            } catch (e: Exception) {
+                android.util.Log.e("ClockListScreenViewModel", "删除子闹钟失败", e)
+                _uiState.update { 
+                    it.copy(error = "删除子闹钟失败: ${e.message}")
+                }
+            }
+        }
+    }
+    
+    // 获取子闹钟ID
+    fun getSubAlarmId(
+        parentAlarmId: Long,
+        timeDiff: String,
+        description: String,
+        triggerType: String?,
+        enabled: Boolean,
+        callback: (Long?) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                android.util.Log.d("ClockListScreenViewModel", "开始获取子闹钟ID: parentAlarmId=$parentAlarmId, timeDiff=$timeDiff")
+                
+                // 获取所有子闹钟
+                val subAlarms = AlarmDatabaseFacade.getSubAlarms(context, parentAlarmId)
+                    .first() // 获取第一个值
+                
+                android.util.Log.d("ClockListScreenViewModel", "获取到的子闹钟列表: $subAlarms")
+                
+                // 计算时间偏移
+                val timeOffsetMinutes = timeDiff.let { diff ->
+                    val sign = if (diff.startsWith("+")) 1 else -1
+                    val parts = diff.substring(1).split(":")
+                    val hours = parts[0].toInt()
+                    val minutes = if (parts.size > 1) parts[1].toInt() else 0
+                    sign * (hours * 60 + minutes)
+                }
+                
+                android.util.Log.d("ClockListScreenViewModel", "计算得到的时间偏移: $timeOffsetMinutes")
+                
+                // 确定关闭方式
+                val dismissType = when (triggerType) {
+                    "keyboard" -> DismissType.TEXT_ALARM
+                    "list" -> DismissType.CHECKLIST_ALARM
+                    "walk" -> DismissType.WALK_ALARM
+                    else -> DismissType.NO_ALARM
+                }
+                
+                android.util.Log.d("ClockListScreenViewModel", "匹配条件: timeOffsetMinutes=$timeOffsetMinutes")
+                
+                // 查找匹配的子闹钟 - 主要匹配时间偏移
+                val subAlarm = subAlarms.find { subAlarm ->
+                    subAlarm.timeOffsetMinutes == timeOffsetMinutes
+                }
+                
+                if (subAlarm == null) {
+                    android.util.Log.e("ClockListScreenViewModel", "未找到匹配的子闹钟")
+                } else {
+                    android.util.Log.d("ClockListScreenViewModel", "找到匹配的子闹钟: $subAlarm")
+                }
+                
+                callback(subAlarm?.id)
+            } catch (e: Exception) {
+                android.util.Log.e("ClockListScreenViewModel", "获取子闹钟ID失败", e)
+                callback(null)
+            }
+        }
+    }
+    
+    // 更新子闹钟时间差
+    fun updateSubAlarmTimeDiff(parentAlarm: Alarm, subAlarm: SubAlarm, newTimeDiffMinutes: Int) {
+        viewModelScope.launch {
+            try {
+                android.util.Log.d("ClockListScreenViewModel", "开始更新子闹钟时间差: subAlarmId=${subAlarm.id}, newTimeDiffMinutes=$newTimeDiffMinutes")
+                
+                val updatedSubAlarm = subAlarm.copy(
+                    timeOffsetMinutes = newTimeDiffMinutes
+                )
+                
+                android.util.Log.d("ClockListScreenViewModel", "更新后的子闹钟数据: $updatedSubAlarm")
+                AlarmDatabaseFacade.updateSubAlarm(context, updatedSubAlarm)
+                
+                android.util.Log.d("ClockListScreenViewModel", "数据库更新成功")
+                
+                // 重新加载闹钟列表以确保UI更新
+                loadAlarms()
+            } catch (e: Exception) {
+                android.util.Log.e("ClockListScreenViewModel", "更新子闹钟时间差失败", e)
+                _uiState.update { 
+                    it.copy(error = "更新子闹钟时间差失败: ${e.message}")
                 }
             }
         }

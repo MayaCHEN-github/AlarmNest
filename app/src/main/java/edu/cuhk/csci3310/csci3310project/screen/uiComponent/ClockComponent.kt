@@ -18,6 +18,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -43,6 +44,7 @@ import edu.cuhk.csci3310.csci3310project.screen.model.SubAlarmData
 import edu.cuhk.csci3310.csci3310project.ui.theme.CSCI3310ProjectTheme
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberTimePickerState
+import kotlin.math.absoluteValue
 
 @Composable
 fun NextAlarmText(
@@ -337,11 +339,194 @@ fun AlarmIcon(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DeleteConfirmationDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = Color.White
+            )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = "Delete Alarm",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "Are you sure you want to delete this alarm?",
+                    color = Color.Black
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text("Cancel", color = Color.Black)
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    TextButton(
+                        onClick = {
+                            onConfirm()
+                            onDismiss()
+                        }
+                    ) {
+                        Text("Delete", color = Color.Red)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DeleteIcon(
+    enabled: Boolean = true,
+    onClick: () -> Unit = {}
+) {
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    Icon(
+        painter = painterResource(id = R.drawable.delete_24px),
+        contentDescription = "Delete",
+        tint = if (enabled) Color.White else Color.Gray,
+        modifier = Modifier.clickable(enabled = enabled) { 
+            if (enabled) {
+                showDeleteDialog = true
+            }
+        }
+    )
+
+    if (showDeleteDialog) {
+        DeleteConfirmationDialog(
+            onDismiss = { showDeleteDialog = false },
+            onConfirm = onClick
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TimeDiffDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (Int) -> Unit,
+    initialTimeDiffMinutes: Int = 0
+) {
+    var timeDiffMinutes by remember { mutableStateOf(initialTimeDiffMinutes) }
+    val hours = timeDiffMinutes / 60
+    val minutes = timeDiffMinutes % 60
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = Color.White
+            )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = "设置时间差",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 时间差显示
+                Text(
+                    text = "${if (timeDiffMinutes >= 0) "+" else ""}${hours}:${String.format("%02d", minutes.absoluteValue)}",
+                    fontSize = 24.sp,
+                    color = Color.Black,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 小时滑块
+                Text("小时", color = Color.Black)
+                Slider(
+                    value = hours.toFloat(),
+                    onValueChange = { newValue ->
+                        val newHours = newValue.toInt()
+                        timeDiffMinutes = newHours * 60 + minutes
+                    },
+                    valueRange = -23f..23f,
+                    steps = 46
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // 分钟滑块
+                Text("分钟", color = Color.Black)
+                Slider(
+                    value = minutes.toFloat(),
+                    onValueChange = { newValue ->
+                        val newMinutes = newValue.toInt()
+                        timeDiffMinutes = hours * 60 + newMinutes
+                    },
+                    valueRange = -59f..59f,
+                    steps = 118
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 确认和取消按钮
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text("取消", color = Color.Black)
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    TextButton(
+                        onClick = {
+                            onConfirm(timeDiffMinutes)
+                            onDismiss()
+                        }
+                    ) {
+                        Text("确认", color = Color.Black)
+                    }
+                }
+            }
+        }
+    }
+}
+
 @Composable
 fun SubAlarmItem(
     subAlarm: SubAlarmData,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    onDelete: () -> Unit = {},
+    onTimeDiffChange: (Int) -> Unit = {}
 ) {
+    var showTimeDiffDialog by remember { mutableStateOf(false) }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -353,7 +538,10 @@ fun SubAlarmItem(
         Text(
             text = subAlarm.timeDiff,
             fontSize = 14.sp,
-            color = if (enabled) Color.White else Color.Gray
+            color = if (enabled) Color.White else Color.Gray,
+            modifier = Modifier.clickable(enabled = enabled) {
+                showTimeDiffDialog = true
+            }
         )
 
         Spacer(modifier = Modifier.width(8.dp))
@@ -385,15 +573,45 @@ fun SubAlarmItem(
             }
         }
 
-        // 闹钟状态图标
-        AlarmIcon(enabled = subAlarm.enabled && enabled)
+        // 闹钟状态图标和删除图标
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            DeleteIcon(
+                enabled = subAlarm.enabled,
+                onClick = onDelete
+            )
+            AlarmIcon(enabled = subAlarm.enabled && enabled)
+        }
+    }
+
+    if (showTimeDiffDialog) {
+        // 解析当前时间差为分钟数
+        val currentTimeDiffMinutes = subAlarm.timeDiff.let { diff ->
+            val sign = if (diff.startsWith("+")) 1 else -1
+            val parts = diff.substring(1).split(":")
+            val hours = parts[0].toInt()
+            val minutes = if (parts.size > 1) parts[1].toInt() else 0
+            sign * (hours * 60 + minutes)
+        }
+
+        TimeDiffDialog(
+            onDismiss = { showTimeDiffDialog = false },
+            onConfirm = { newTimeDiffMinutes ->
+                onTimeDiffChange(newTimeDiffMinutes)
+            },
+            initialTimeDiffMinutes = currentTimeDiffMinutes
+        )
     }
 }
 
 @Composable
 fun SubAlarmList(
     subAlarms: List<SubAlarmData>,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    onSubAlarmDelete: (SubAlarmData) -> Unit = {},
+    onSubAlarmTimeDiffChange: (SubAlarmData, Int) -> Unit = { _, _ -> }
 ) {
     Column(
         modifier = Modifier
@@ -403,7 +621,11 @@ fun SubAlarmList(
         subAlarms.forEach { subAlarm ->
             SubAlarmItem(
                 subAlarm = subAlarm,
-                enabled = enabled
+                enabled = enabled,
+                onDelete = { onSubAlarmDelete(subAlarm) },
+                onTimeDiffChange = { newTimeDiffMinutes ->
+                    onSubAlarmTimeDiffChange(subAlarm, newTimeDiffMinutes)
+                }
             )
         }
     }
@@ -639,10 +861,14 @@ fun ClockItem(
     onTimeChange: ((Int, Int) -> Unit)? = null,
     onToggleEnabled: (Boolean) -> Unit = {},
     onRepeatTypeChanged: (RepeatType, String?) -> Unit = { _, _ -> },
-    onDescriptionChange: ((String) -> Unit)? = null
+    onDescriptionChange: ((String) -> Unit)? = null,
+    onDelete: () -> Unit = {},
+    onSubAlarmDelete: (SubAlarmData) -> Unit = {},
+    onSubAlarmTimeDiffChange: (SubAlarmData, Int) -> Unit = { _, _ -> }
 ) {
     var isEnabled by remember { mutableStateOf(initialEnabled) }
     var showRepeatDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
 
     // 根据repeatType和customDays生成selectedDays
     val selectedDays = remember(repeatType, customDays) {
@@ -706,9 +932,22 @@ fun ClockItem(
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    AlarmIcon(
-                        enabled = isEnabled
-                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.delete_24px),
+                            contentDescription = "Delete",
+                            tint = if (isEnabled) Color.White else Color.Gray,
+                            modifier = Modifier.clickable(enabled = isEnabled) { 
+                                if (isEnabled) {
+                                    showDeleteDialog = true
+                                }
+                            }
+                        )
+                        AlarmIcon(enabled = isEnabled)
+                    }
                     Spacer(modifier = Modifier.width(8.dp))
                     Switch(
                         checked = isEnabled,
@@ -736,42 +975,18 @@ fun ClockItem(
             if (subAlarms.isNotEmpty()) {
                 SubAlarmList(
                     subAlarms = subAlarms,
-                    enabled = isEnabled
+                    enabled = isEnabled,
+                    onSubAlarmDelete = onSubAlarmDelete,
+                    onSubAlarmTimeDiffChange = onSubAlarmTimeDiffChange
                 )
             }
         }
     }
-}
 
-@Preview
-@Composable
-fun ClockItemPreview() {
-    CSCI3310ProjectTheme {
-        Column {
-            // 启用状态的闹钟，带有子闹钟
-            ClockItem(
-                time = "08:00",
-                description = "Wake-up alarm",
-                initialEnabled = true,
-                subAlarms = listOf(
-                    SubAlarmData("+1:00", "Charge your phone!", "keyboard", true),
-                    SubAlarmData("+1:20", "Commuting to school", "walk", true)
-                )
-            )
-
-            Spacer(modifier = Modifier.padding(16.dp))
-
-            // 禁用状态的闹钟，带有子闹钟
-            ClockItem(
-                time = "12:30",
-                description = "Lunch break",
-                initialEnabled = false,
-                subAlarms = listOf(
-                    SubAlarmData("+0:30", "Prepare lunch", "list", true),
-                    SubAlarmData("+0:45", "Walk to restaurant", "walk", false)
-                )
-            )
-        }
+    if (showDeleteDialog) {
+        DeleteConfirmationDialog(
+            onDismiss = { showDeleteDialog = false },
+            onConfirm = onDelete
+        )
     }
 }
-

@@ -16,6 +16,7 @@ data class AlarmData(
 }
 
 data class SubAlarmData(
+    val id: Long = 0,
     val timeDiff: String,  // 例如 "+1:00"
     val description: String,
     val triggerType: String? = null, // "keyboard", "list", "walk" 或 null
