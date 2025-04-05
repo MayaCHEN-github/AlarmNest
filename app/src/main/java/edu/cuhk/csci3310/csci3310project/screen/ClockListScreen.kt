@@ -98,7 +98,21 @@ fun ClockListScreen(
                             repeatType = alarm.repeatType,
                             customDays = alarm.customDays,
                             onToggleEnabled = { isEnabled ->
-                                // TODO: 调用ViewModel的toggleAlarmEnabled方法
+                                Log.d("ClockListScreen", "收到开关状态更改请求: isEnabled=$isEnabled")
+                                Log.d("ClockListScreen", "当前闹钟数据: $alarm")
+                                
+                                // 从数据库获取完整的Alarm对象
+                                viewModel.toggleAlarmEnabled(
+                                    Alarm(
+                                        id = alarm.id,
+                                        hour = alarm.time.split(":")[0].toInt(),
+                                        minute = alarm.time.split(":")[1].toInt(),
+                                        repeatType = alarm.repeatType,
+                                        customDays = alarm.customDays,
+                                        label = alarm.description,
+                                        isEnabled = alarm.initialEnabled
+                                    )
+                                )
                             },
                             onRepeatTypeChanged = { repeatType, customDays ->
                                 Log.d("ClockListScreen", "收到重复模式更改请求: repeatType=$repeatType, customDays=$customDays")
