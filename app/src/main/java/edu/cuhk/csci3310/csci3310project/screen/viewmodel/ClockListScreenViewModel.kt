@@ -579,13 +579,25 @@ open class ClockListScreenViewModel(private val context: Context) : ViewModel() 
         viewModelScope.launch {
             try {
                 android.util.Log.d("ClockListScreenViewModel", "开始更新子闹钟时间差: subAlarmId=${subAlarm.id}, newTimeDiffMinutes=$newTimeDiffMinutes")
+                android.util.Log.d("ClockListScreenViewModel", "当前子闹钟数据: $subAlarm")
                 
                 val updatedSubAlarm = subAlarm.copy(
                     timeOffsetMinutes = newTimeDiffMinutes
                 )
                 
                 android.util.Log.d("ClockListScreenViewModel", "更新后的子闹钟数据: $updatedSubAlarm")
+                
+                // 更新数据库
                 AlarmDatabaseFacade.updateSubAlarm(context, updatedSubAlarm)
+                
+                // 验证更新是否成功
+                val updatedAlarm = AlarmDatabaseFacade.getSubAlarms(context, parentAlarm.id)
+                    .first()
+                    .find { it.id == subAlarm.id }
+                
+                if (updatedAlarm == null || updatedAlarm.timeOffsetMinutes != newTimeDiffMinutes) {
+                    throw IllegalStateException("数据库更新验证失败")
+                }
                 
                 android.util.Log.d("ClockListScreenViewModel", "数据库更新成功")
                 
@@ -623,6 +635,94 @@ open class ClockListScreenViewModel(private val context: Context) : ViewModel() 
                 android.util.Log.e("ClockListScreenViewModel", "添加子闹钟失败", e)
                 _uiState.update { 
                     it.copy(error = "添加子闹钟失败: ${e.message}")
+                }
+            }
+        }
+    }
+    
+    // 更新子闹钟备注
+    fun updateSubAlarmDescription(parentAlarm: Alarm, subAlarm: SubAlarm, newDescription: String) {
+        viewModelScope.launch {
+            try {
+                android.util.Log.d("ClockListScreenViewModel", "开始更新子闹钟备注")
+                android.util.Log.d("ClockListScreenViewModel", "父闹钟ID: ${parentAlarm.id}")
+                android.util.Log.d("ClockListScreenViewModel", "子闹钟ID: ${subAlarm.id}")
+                android.util.Log.d("ClockListScreenViewModel", "新的备注: $newDescription")
+                
+                // 创建更新后的子闹钟对象
+                val updatedSubAlarm = subAlarm.copy(
+                    label = newDescription  // 使用新的描述值
+                )
+                
+                android.util.Log.d("ClockListScreenViewModel", "更新后的子闹钟数据: $updatedSubAlarm")
+                
+                // 更新子闹钟备注
+                AlarmDatabaseFacade.updateSubAlarm(
+                    context = context,
+                    subAlarm = updatedSubAlarm
+                )
+                
+                android.util.Log.d("ClockListScreenViewModel", "子闹钟备注更新成功")
+                
+                // 刷新UI
+                loadAlarms()
+            } catch (e: Exception) {
+                android.util.Log.e("ClockListScreenViewModel", "更新子闹钟备注失败", e)
+                _uiState.update { 
+                    it.copy(error = "更新子闹钟备注失败: ${e.message}")
+                }
+            }
+        }
+    }
+    
+    // 更新子闹钟触发方式
+    fun updateSubAlarmTriggerType(parentAlarm: Alarm, subAlarm: SubAlarm, newTriggerType: String?) {
+        viewModelScope.launch {
+            try {
+                android.util.Log.d("ClockListScreenViewModel", "开始更新子闹钟触发方式")
+                android.util.Log.d("ClockListScreenViewModel", "父闹钟ID: ${parentAlarm.id}")
+                android.util.Log.d("ClockListScreenViewModel", "子闹钟ID: ${subAlarm.id}")
+                android.util.Log.d("ClockListScreenViewModel", "新的触发方式: $newTriggerType")
+                
+                // 获取最新的子闹钟数据
+                val latestSubAlarm = AlarmDatabaseFacade.getSubAlarms(context, parentAlarm.id)
+                    .first()
+                    .find { it.id == subAlarm.id }
+                
+                if (latestSubAlarm == null) {
+                    android.util.Log.e("ClockListScreenViewModel", "未找到子闹钟")
+                    return@launch
+                }
+                
+                // 将触发方式转换为DismissType
+                val newDismissType = when (newTriggerType) {
+                    "keyboard" -> DismissType.TEXT_ALARM
+                    "list" -> DismissType.CHECKLIST_ALARM
+                    "walk" -> DismissType.WALK_ALARM
+                    else -> DismissType.NO_ALARM
+                }
+                
+                // 创建更新后的子闹钟对象,使用最新的数据
+                val updatedSubAlarm = latestSubAlarm.copy(
+                    dismissType = newDismissType
+                )
+                
+                android.util.Log.d("ClockListScreenViewModel", "更新后的子闹钟数据: $updatedSubAlarm")
+                
+                // 更新子闹钟触发方式
+                AlarmDatabaseFacade.updateSubAlarm(
+                    context = context,
+                    subAlarm = updatedSubAlarm
+                )
+                
+                android.util.Log.d("ClockListScreenViewModel", "子闹钟触发方式更新成功")
+                
+                // 刷新UI
+                loadAlarms()
+            } catch (e: Exception) {
+                android.util.Log.e("ClockListScreenViewModel", "更新子闹钟触发方式失败", e)
+                _uiState.update { 
+                    it.copy(error = "更新子闹钟触发方式失败: ${e.message}")
                 }
             }
         }

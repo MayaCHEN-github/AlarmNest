@@ -270,6 +270,88 @@ fun ClockListScreen(
                                 
                                 viewModel.updateSubAlarmTimeDiff(parentAlarm, subAlarmEntity, newTimeDiffMinutes)
                             },
+                            onSubAlarmDescriptionChange = { subAlarm, newDescription ->
+                                Log.d("ClockListScreen", "收到子闹钟备注更改请求")
+                                Log.d("ClockListScreen", "当前子闹钟数据: $subAlarm")
+                                Log.d("ClockListScreen", "新的备注: $newDescription")
+                                
+                                // 从数据库获取完整的Alarm和SubAlarm对象
+                                val parentAlarm = Alarm(
+                                    id = alarm.id,
+                                    hour = alarm.time.split(":")[0].toInt(),
+                                    minute = alarm.time.split(":")[1].toInt(),
+                                    repeatType = alarm.repeatType,
+                                    customDays = alarm.customDays,
+                                    label = alarm.description,
+                                    isEnabled = alarm.initialEnabled
+                                )
+                                
+                                // 解析timeDiff为timeOffsetMinutes
+                                val timeOffsetMinutes = subAlarm.timeDiff.let { diff ->
+                                    val sign = if (diff.startsWith("+")) 1 else -1
+                                    val parts = diff.substring(1).split(":")
+                                    val hours = parts[0].toInt()
+                                    val minutes = if (parts.size > 1) parts[1].toInt() else 0
+                                    sign * (hours * 60 + minutes)
+                                }
+                                
+                                val subAlarmEntity = SubAlarm(
+                                    id = subAlarm.id,
+                                    parentAlarmId = alarm.id,
+                                    timeOffsetMinutes = timeOffsetMinutes,
+                                    dismissType = when (subAlarm.triggerType) {
+                                        "keyboard" -> DismissType.TEXT_ALARM
+                                        "list" -> DismissType.CHECKLIST_ALARM
+                                        "walk" -> DismissType.WALK_ALARM
+                                        else -> DismissType.NO_ALARM
+                                    },
+                                    label = subAlarm.description,
+                                    isEnabled = subAlarm.enabled
+                                )
+                                
+                                viewModel.updateSubAlarmDescription(parentAlarm, subAlarmEntity, newDescription)
+                            },
+                            onSubAlarmTriggerTypeChange = { subAlarm, newTriggerType ->
+                                Log.d("ClockListScreen", "收到子闹钟触发方式更改请求")
+                                Log.d("ClockListScreen", "当前子闹钟数据: $subAlarm")
+                                Log.d("ClockListScreen", "新的触发方式: $newTriggerType")
+                                
+                                // 从数据库获取完整的Alarm和SubAlarm对象
+                                val parentAlarm = Alarm(
+                                    id = alarm.id,
+                                    hour = alarm.time.split(":")[0].toInt(),
+                                    minute = alarm.time.split(":")[1].toInt(),
+                                    repeatType = alarm.repeatType,
+                                    customDays = alarm.customDays,
+                                    label = alarm.description,
+                                    isEnabled = alarm.initialEnabled
+                                )
+                                
+                                // 解析timeDiff为timeOffsetMinutes
+                                val timeOffsetMinutes = subAlarm.timeDiff.let { diff ->
+                                    val sign = if (diff.startsWith("+")) 1 else -1
+                                    val parts = diff.substring(1).split(":")
+                                    val hours = parts[0].toInt()
+                                    val minutes = if (parts.size > 1) parts[1].toInt() else 0
+                                    sign * (hours * 60 + minutes)
+                                }
+                                
+                                val subAlarmEntity = SubAlarm(
+                                    id = subAlarm.id,
+                                    parentAlarmId = alarm.id,
+                                    timeOffsetMinutes = timeOffsetMinutes,
+                                    dismissType = when (subAlarm.triggerType) {
+                                        "keyboard" -> DismissType.TEXT_ALARM
+                                        "list" -> DismissType.CHECKLIST_ALARM
+                                        "walk" -> DismissType.WALK_ALARM
+                                        else -> DismissType.NO_ALARM
+                                    },
+                                    label = subAlarm.description,
+                                    isEnabled = subAlarm.enabled
+                                )
+                                
+                                viewModel.updateSubAlarmTriggerType(parentAlarm, subAlarmEntity, newTriggerType)
+                            },
                             onAddSubAlarm = {
                                 Log.d("ClockListScreen", "收到添加子闹钟请求")
                                 Log.d("ClockListScreen", "当前闹钟数据: $alarm")

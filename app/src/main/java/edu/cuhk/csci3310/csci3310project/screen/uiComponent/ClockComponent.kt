@@ -1,5 +1,6 @@
 package edu.cuhk.csci3310.csci3310project.screen.uiComponent
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -449,7 +450,7 @@ fun TimeDiffDialog(
                     .padding(16.dp)
             ) {
                 Text(
-                    text = "设置时间差",
+                    text = "Set Time Difference",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.Black
@@ -468,7 +469,7 @@ fun TimeDiffDialog(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // 小时滑块
-                Text("小时", color = Color.Black)
+                Text("Hours", color = Color.Black)
                 Slider(
                     value = hours.toFloat(),
                     onValueChange = { newValue ->
@@ -482,7 +483,7 @@ fun TimeDiffDialog(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 // 分钟滑块
-                Text("分钟", color = Color.Black)
+                Text("Minutes", color = Color.Black)
                 Slider(
                     value = minutes.toFloat(),
                     onValueChange = { newValue ->
@@ -501,7 +502,7 @@ fun TimeDiffDialog(
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(onClick = onDismiss) {
-                        Text("取消", color = Color.Black)
+                        Text("Cancel", color = Color.Black)
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     TextButton(
@@ -510,7 +511,151 @@ fun TimeDiffDialog(
                             onDismiss()
                         }
                     ) {
-                        Text("确认", color = Color.Black)
+                        Text("Confirm", color = Color.Black)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SubAlarmEditDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (String, String?) -> Unit,
+    initialDescription: String = "",
+    initialTriggerType: String? = null
+) {
+    var description by remember(initialDescription) { mutableStateOf(initialDescription) }
+    var selectedTriggerType by remember { mutableStateOf(initialTriggerType) }
+
+    // 添加初始化日志
+    Log.d("SubAlarmEditDialog", "对话框初始化 - initialDescription: $initialDescription, initialTriggerType: $initialTriggerType")
+    Log.d("SubAlarmEditDialog", "当前状态 - description: $description, selectedTriggerType: $selectedTriggerType")
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = Color.White
+            )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = "Edit Sub-Alarm",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 描述输入框
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { 
+                        Log.d("SubAlarmEditDialog", "描述输入变化 - 旧值: $description, 新值: $it")
+                        description = it 
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Note") },
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        focusedBorderColor = Color.Black,
+                        unfocusedBorderColor = Color.Gray
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 触发方式选择
+                Text("Trigger Type", color = Color.Black)
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    // 键盘输入
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.keyboard_24px),
+                            contentDescription = "Typing alarm",
+                            tint = if (selectedTriggerType == "keyboard") Color.Black else Color.Gray,
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clickable { 
+                                    Log.d("SubAlarmEditDialog", "选择触发方式 - keyboard")
+                                    selectedTriggerType = "keyboard" 
+                                }
+                        )
+                        Text("Typing", color = if (selectedTriggerType == "keyboard") Color.Black else Color.Gray)
+                    }
+                    
+                    // 清单
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.list_24px),
+                            contentDescription = "Checklist",
+                            tint = if (selectedTriggerType == "list") Color.Black else Color.Gray,
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clickable { 
+                                    Log.d("SubAlarmEditDialog", "选择触发方式 - list")
+                                    selectedTriggerType = "list" 
+                                }
+                        )
+                        Text("Checklist", color = if (selectedTriggerType == "list") Color.Black else Color.Gray)
+                    }
+                    
+                    // 走路
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.directions_walk_24px),
+                            contentDescription = "Walking",
+                            tint = if (selectedTriggerType == "walk") Color.Black else Color.Gray,
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clickable { 
+                                    Log.d("SubAlarmEditDialog", "选择触发方式 - walk")
+                                    selectedTriggerType = "walk" 
+                                }
+                        )
+                        Text("Walking", color = if (selectedTriggerType == "walk") Color.Black else Color.Gray)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 确认和取消按钮
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text("Cancel", color = Color.Black)
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    TextButton(
+                        onClick = {
+                            Log.d("SubAlarmEditDialog", "确认按钮点击 - 最终值: description=$description, triggerType=$selectedTriggerType")
+                            onConfirm(description, selectedTriggerType)
+                            onDismiss()
+                        }
+                    ) {
+                        Text("Confirm", color = Color.Black)
                     }
                 }
             }
@@ -523,9 +668,19 @@ fun SubAlarmItem(
     subAlarm: SubAlarmData,
     enabled: Boolean = true,
     onDelete: () -> Unit = {},
-    onTimeDiffChange: (Int) -> Unit = {}
+    onTimeDiffChange: (Int) -> Unit = {},
+    onDescriptionChange: (String) -> Unit = {},
+    onTriggerTypeChange: (String?) -> Unit = {}
 ) {
     var showTimeDiffDialog by remember { mutableStateOf(false) }
+    var showEditDialog by remember { mutableStateOf(false) }
+    var currentDescription by remember(subAlarm) { mutableStateOf(subAlarm.description) }
+    var currentTriggerType by remember(subAlarm) { mutableStateOf(subAlarm.triggerType) }
+    var currentTimeDiff by remember(subAlarm) { mutableStateOf(subAlarm.timeDiff) }
+
+    // 添加日志
+    Log.d("SubAlarmItem", "子闹钟项渲染 - subAlarm: $subAlarm")
+    Log.d("SubAlarmItem", "当前状态 - description: $currentDescription, triggerType: $currentTriggerType, timeDiff: $currentTimeDiff")
 
     Row(
         modifier = Modifier
@@ -536,10 +691,11 @@ fun SubAlarmItem(
     ) {
         // 时间差
         Text(
-            text = subAlarm.timeDiff,
+            text = currentTimeDiff,
             fontSize = 14.sp,
             color = if (enabled) Color.White else Color.Gray,
             modifier = Modifier.clickable(enabled = enabled) {
+                Log.d("SubAlarmItem", "点击时间差 - 打开时间差对话框")
                 showTimeDiffDialog = true
             }
         )
@@ -548,26 +704,30 @@ fun SubAlarmItem(
 
         // 描述
         Text(
-            text = subAlarm.description,
+            text = currentDescription,
             fontSize = 14.sp,
-            color = if (enabled) Color.White else Color.Gray
+            color = if (enabled) Color.White else Color.Gray,
+            modifier = Modifier.clickable(enabled = enabled) {
+                Log.d("SubAlarmItem", "点击描述 - 打开编辑对话框")
+                showEditDialog = true
+            }
         )
 
         Spacer(modifier = Modifier.width(8.dp))
 
         // 触发方式图标（如果有）
-        if (subAlarm.triggerType != null && enabled) {
-            val iconRes = when (subAlarm.triggerType) {
+        if (currentTriggerType != null && enabled) {
+            val iconRes = when (currentTriggerType) {
                 "keyboard" -> R.drawable.keyboard_24px
                 "list" -> R.drawable.list_24px
-                "walk" -> R.drawable.alarm_24px // 临时替代
+                "walk" -> R.drawable.directions_walk_24px
                 else -> null
             }
             if (iconRes != null) {
                 ActionIcon(
                     iconRes = iconRes,
                     enabled = enabled,
-                    contentDescription = "Trigger type ${subAlarm.triggerType}"
+                    contentDescription = "Trigger type ${currentTriggerType}"
                 )
                 Spacer(modifier = Modifier.width(8.dp))
             }
@@ -588,7 +748,7 @@ fun SubAlarmItem(
 
     if (showTimeDiffDialog) {
         // 解析当前时间差为分钟数
-        val currentTimeDiffMinutes = subAlarm.timeDiff.let { diff ->
+        val currentTimeDiffMinutes = currentTimeDiff.let { diff ->
             val sign = if (diff.startsWith("+")) 1 else -1
             val parts = diff.substring(1).split(":")
             val hours = parts[0].toInt()
@@ -597,11 +757,40 @@ fun SubAlarmItem(
         }
 
         TimeDiffDialog(
-            onDismiss = { showTimeDiffDialog = false },
+            onDismiss = { 
+                Log.d("SubAlarmItem", "时间差对话框关闭")
+                showTimeDiffDialog = false 
+            },
             onConfirm = { newTimeDiffMinutes ->
+                Log.d("SubAlarmItem", "时间差对话框确认 - 新时间差: $newTimeDiffMinutes")
+                // 更新本地状态
+                val hours = newTimeDiffMinutes / 60
+                val minutes = newTimeDiffMinutes % 60
+                currentTimeDiff = "${if (newTimeDiffMinutes >= 0) "+" else ""}${hours}:${String.format("%02d", minutes.absoluteValue)}"
+                // 调用回调
                 onTimeDiffChange(newTimeDiffMinutes)
             },
             initialTimeDiffMinutes = currentTimeDiffMinutes
+        )
+    }
+
+    if (showEditDialog) {
+        SubAlarmEditDialog(
+            onDismiss = { 
+                Log.d("SubAlarmItem", "编辑对话框关闭")
+                showEditDialog = false 
+            },
+            onConfirm = { newDescription, newTriggerType ->
+                Log.d("SubAlarmItem", "编辑对话框确认 - 新描述: $newDescription, 新触发方式: $newTriggerType")
+                // 更新本地状态
+                currentDescription = newDescription
+                currentTriggerType = newTriggerType
+                // 调用回调
+                onDescriptionChange(newDescription)
+                onTriggerTypeChange(newTriggerType)
+            },
+            initialDescription = currentDescription,
+            initialTriggerType = currentTriggerType
         )
     }
 }
@@ -612,6 +801,8 @@ fun SubAlarmList(
     enabled: Boolean = true,
     onSubAlarmDelete: (SubAlarmData) -> Unit = {},
     onSubAlarmTimeDiffChange: (SubAlarmData, Int) -> Unit = { _, _ -> },
+    onSubAlarmDescriptionChange: (SubAlarmData, String) -> Unit = { _, _ -> },
+    onSubAlarmTriggerTypeChange: (SubAlarmData, String?) -> Unit = { _, _ -> },
     onAddSubAlarm: () -> Unit = {}
 ) {
     Column(
@@ -626,6 +817,12 @@ fun SubAlarmList(
                 onDelete = { onSubAlarmDelete(subAlarm) },
                 onTimeDiffChange = { newTimeDiffMinutes ->
                     onSubAlarmTimeDiffChange(subAlarm, newTimeDiffMinutes)
+                },
+                onDescriptionChange = { newDescription ->
+                    onSubAlarmDescriptionChange(subAlarm, newDescription)
+                },
+                onTriggerTypeChange = { newTriggerType ->
+                    onSubAlarmTriggerTypeChange(subAlarm, newTriggerType)
                 }
             )
         }
@@ -884,6 +1081,8 @@ fun ClockItem(
     onDelete: () -> Unit = {},
     onSubAlarmDelete: (SubAlarmData) -> Unit = {},
     onSubAlarmTimeDiffChange: (SubAlarmData, Int) -> Unit = { _, _ -> },
+    onSubAlarmDescriptionChange: (SubAlarmData, String) -> Unit = { _, _ -> },
+    onSubAlarmTriggerTypeChange: (SubAlarmData, String?) -> Unit = { _, _ -> },
     onAddSubAlarm: () -> Unit = {}
 ) {
     var isEnabled by remember { mutableStateOf(initialEnabled) }
@@ -997,6 +1196,8 @@ fun ClockItem(
                 enabled = isEnabled,
                 onSubAlarmDelete = onSubAlarmDelete,
                 onSubAlarmTimeDiffChange = onSubAlarmTimeDiffChange,
+                onSubAlarmDescriptionChange = onSubAlarmDescriptionChange,
+                onSubAlarmTriggerTypeChange = onSubAlarmTriggerTypeChange,
                 onAddSubAlarm = onAddSubAlarm
             )
         }

@@ -290,15 +290,20 @@ object AlarmDatabaseFacade {
     // 更新子闹钟
     suspend fun updateSubAlarm(context: Context, subAlarm: SubAlarm) {
         try {
+            android.util.Log.d(TAG, "开始更新子闹钟: $subAlarm")
+            
             val repo = getRepository(context)
             if (repo == null) {
-                Log.e(TAG, "update sub alarm更新子闹钟失败：仓库不存在")
-                return
+                val error = "update sub alarm更新子闹钟失败：仓库不存在"
+                android.util.Log.e(TAG, error)
+                throw IllegalStateException(error)
             }
             
             repo.updateSubAlarm(subAlarm)
+            android.util.Log.d(TAG, "子闹钟更新成功")
         } catch (e: Exception) {
-            Log.e(TAG, "update sub alarm更新子闹钟失败: ${e.message}", e)
+            android.util.Log.e(TAG, "update sub alarm更新子闹钟失败: ${e.message}", e)
+            throw e // 重新抛出异常，让调用者处理
         }
     }
     
