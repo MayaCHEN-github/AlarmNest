@@ -7,12 +7,15 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.media.MediaPlayer
+import android.net.Uri
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import edu.cuhk.csci3310.csci3310project.MainActivity
+import edu.cuhk.csci3310.csci3310project.R
 import java.util.*
 
 class AlarmService : Service() {
@@ -28,6 +31,7 @@ class AlarmService : Service() {
     private var currentIntent: Intent? = null
     private var notificationTimer: Timer? = null
     private var isRunning = false
+    private var mediaPlayer: MediaPlayer? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -84,6 +88,9 @@ class AlarmService : Service() {
                     }
                 }
                 
+                // 启动闹钟音乐
+                startAlarmSound()
+                
                 // 启动定时器
                 startNotificationTimer()
             } catch (e: Exception) {
@@ -94,6 +101,80 @@ class AlarmService : Service() {
         }
         
         return START_STICKY
+    }
+
+    private fun startAlarmSound() {
+        try {
+            Log.d(TAG, "准备播放闹钟音乐")
+            
+            // 设置系统音量
+            val audioManager = getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager
+            // 设置闹钟音量最大
+            audioManager.setStreamVolume(
+                android.media.AudioManager.STREAM_ALARM,
+                audioManager.getStreamMaxVolume(android.media.AudioManager.STREAM_ALARM),
+                0
+            )
+            
+            // 创建新的MediaPlayer
+            mediaPlayer = MediaPlayer().apply {
+                try {
+                    // 设置音频流类型为闹钟
+                    setAudioAttributes(
+                        android.media.AudioAttributes.Builder()
+                            .setUsage(android.media.AudioAttributes.USAGE_ALARM)
+                            .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                            .build()
+                    )
+                    
+                    // 设置音量
+                    setVolume(1.0f, 1.0f)
+                    
+                    // 设置数据源
+                    setDataSource(this@AlarmService, Uri.parse("android.resource://" + packageName + "/" + R.raw.alarm_sound))
+                    
+                    // 设置循环播放
+                    isLooping = true
+                    
+                    // 准备播放
+                    prepare()
+                    
+                    // 开始播放
+                    start()
+                    
+                    Log.d(TAG, "闹钟音乐开始播放")
+                } catch (e: Exception) {
+                    Log.e(TAG, "播放闹钟音乐失败: ${e.message}", e)
+                    e.printStackTrace()
+                    release()
+                    mediaPlayer = null
+                    android.os.Handler(mainLooper).postDelayed({
+                        startAlarmSound()
+                    }, 1000)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "创建MediaPlayer失败: ${e.message}", e)
+            e.printStackTrace()
+            android.os.Handler(mainLooper).postDelayed({
+                startAlarmSound()
+            }, 1000)
+        }
+    }
+
+    private fun stopAlarmSound() {
+        try {
+            mediaPlayer?.apply {
+                if (isPlaying) {
+                    stop()
+                    Log.d(TAG, "音乐已停止")
+                }
+                release()
+            }
+            mediaPlayer = null
+        } catch (e: Exception) {
+            Log.e(TAG, "停止闹钟音乐时发生错误: ${e.message}", e)
+        }
     }
 
     private fun startNotificationTimer() {
@@ -119,6 +200,9 @@ class AlarmService : Service() {
         isRunning = false
         notificationTimer?.cancel()
         notificationTimer = null
+        
+        // 停止闹钟音乐
+        stopAlarmSound()
         
         try {
             // 释放 WakeLock
@@ -148,6 +232,8 @@ class AlarmService : Service() {
                     enableVibration(true)
                     setShowBadge(true)
                     setBypassDnd(true)
+                    // 禁用通知声音
+                    setSound(null, null)
                 }
 
                 val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -184,7 +270,6 @@ class AlarmService : Service() {
                 .setAutoCancel(false)
                 .setOngoing(true)
                 .setVibrate(longArrayOf(0, 1000, 500, 1000))
-                .setDefaults(NotificationCompat.DEFAULT_ALL)
                 .setContentIntent(openAppPendingIntent)
                 .build()
         } catch (e: Exception) {

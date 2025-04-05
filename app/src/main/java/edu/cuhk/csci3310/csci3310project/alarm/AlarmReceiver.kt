@@ -9,11 +9,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-// import android.media.MediaPlayer
-// import android.net.Uri
 import android.os.Build
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -27,8 +23,6 @@ class AlarmReceiver : BroadcastReceiver() {
         private const val NOTIFICATION_ID = 1
         const val ACTION_STOP_ALARM = "edu.cuhk.csci3310.csci3310project.STOP_ALARM"
         private const val TAG = "AlarmReceiver"
-        // TODO: 日后再尝试完成自定义铃声功能！
-        // private var mediaPlayer: MediaPlayer? = null
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -54,8 +48,6 @@ class AlarmReceiver : BroadcastReceiver() {
                     // 启动前台服务
                     startForegroundService(context, alarmId, alarmLabel)
                     
-                    // TODO: 日后再尝试完成自定义铃声功能！
-                    // playAlarmSound(context)
                 }
             }
         } catch (e: Exception) {
@@ -73,6 +65,8 @@ class AlarmReceiver : BroadcastReceiver() {
                 enableVibration(true)
                 setShowBadge(true)
                 setBypassDnd(true)
+                // 禁用通知声音
+                setSound(null, null)
             }
 
             val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -106,56 +100,11 @@ class AlarmReceiver : BroadcastReceiver() {
         }
     }
 
-    // TODO: 日后再尝试完成自定义铃声功能！
-    /*
-    private fun playAlarmSound(context: Context) {
-        try {
-            Log.d(TAG, "准备播放闹钟音乐")
-            
-            // 创建新的MediaPlayer
-            mediaPlayer = MediaPlayer().apply {
-                try {
-                    setDataSource(context, Uri.parse("android.resource://" + context.packageName + "/" + R.raw.alarm_sound))
-                    isLooping = true
-                    prepare()
-                    start()
-                    Log.d(TAG, "闹钟音乐开始播放")
-                } catch (e: Exception) {
-                    Log.e(TAG, "播放闹钟音乐失败: ${e.message}", e)
-                    release()
-                    mediaPlayer = null
-                    // 如果播放失败，尝试重新播放
-                    Handler(Looper.getMainLooper()).postDelayed({
-                        playAlarmSound(context)
-                    }, 1000)
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "创建MediaPlayer失败: ${e.message}", e)
-            // 如果创建失败，尝试重新创建
-            Handler(Looper.getMainLooper()).postDelayed({
-                playAlarmSound(context)
-            }, 1000)
-        }
-    }
-    */
 
     private fun stopAlarm(context: Context) {
         try {
             Log.d(TAG, "准备停止闹钟")
             
-            // TODO: 日后再尝试完成自定义铃声功能！
-            /*
-            // 停止音乐播放
-            mediaPlayer?.apply {
-                if (isPlaying) {
-                    stop()
-                    Log.d(TAG, "音乐已停止")
-                }
-                release()
-            }
-            mediaPlayer = null
-            */
             
             // 取消通知
             with(NotificationManagerCompat.from(context)) {
