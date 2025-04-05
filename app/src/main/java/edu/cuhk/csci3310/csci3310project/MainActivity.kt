@@ -15,6 +15,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -26,6 +28,8 @@ import androidx.navigation.compose.rememberNavController
 import edu.cuhk.csci3310.csci3310project.alarm.AlarmPermission
 import edu.cuhk.csci3310.csci3310project.alarm.AlarmReceiver
 import edu.cuhk.csci3310.csci3310project.alarm.AlarmTest
+import edu.cuhk.csci3310.csci3310project.alarm.storage.Alarm
+import edu.cuhk.csci3310.csci3310project.alarm.storage.AlarmDatabaseFacade
 import edu.cuhk.csci3310.csci3310project.screen.AlarmOffScreen
 import edu.cuhk.csci3310.csci3310project.screen.AlarmScreen
 import edu.cuhk.csci3310.csci3310project.screen.ClockListScreen
@@ -116,7 +120,17 @@ class MainActivity : ComponentActivity() {
                         TestScreen(activity = this@MainActivity)
                     }
                     composable("alarm_screen") {
+                        val alarmId = intent?.getLongExtra("alarm_id", -1) ?: -1
+                        var alarm by remember { mutableStateOf<Alarm?>(null) }
+                        
+                        LaunchedEffect(alarmId) {
+                            if (alarmId != -1L) {
+                                alarm = AlarmDatabaseFacade.getAlarmById(this@MainActivity, alarmId)
+                            }
+                        }
+                        
                         AlarmScreen(
+                            alarm = alarm,
                             onStartTask = {
                                 stopAlarm()
                                 navController.navigate("clock_list_screen") {
@@ -187,3 +201,4 @@ fun TestScreen(activity: MainActivity){
     )
     ClockListScreen(viewModel = viewModel)
 }
+

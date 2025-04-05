@@ -247,12 +247,15 @@ class AlarmService : Service() {
 
     private fun createNotification(): Notification {
         try {
+            val alarmId = currentIntent?.getLongExtra("alarm_id", -1) ?: -1
             val alarmLabel = currentIntent?.getStringExtra("alarm_label") ?: "闹钟提醒"
             
             // 创建打开应用的Intent
             val openAppIntent = Intent(this, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 putExtra("navigate_to", "alarm_screen")
+                putExtra("alarm_id", alarmId)
+                putExtra("alarm_label", alarmLabel)
             }
             val openAppPendingIntent = PendingIntent.getActivity(
                 this,
@@ -262,7 +265,10 @@ class AlarmService : Service() {
             )
 
             // 发送广播来触发导航
-            val broadcastIntent = Intent("edu.cuhk.csci3310.csci3310project.NAVIGATE_TO_ALARM")
+            val broadcastIntent = Intent("edu.cuhk.csci3310.csci3310project.NAVIGATE_TO_ALARM").apply {
+                putExtra("alarm_id", alarmId)
+                putExtra("alarm_label", alarmLabel)
+            }
             sendBroadcast(broadcastIntent)
 
             return NotificationCompat.Builder(this, CHANNEL_ID)

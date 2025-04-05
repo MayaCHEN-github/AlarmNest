@@ -20,10 +20,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import edu.cuhk.csci3310.csci3310project.R
+import edu.cuhk.csci3310.csci3310project.alarm.storage.Alarm
 import edu.cuhk.csci3310.csci3310project.ui.theme.CSCI3310ProjectTheme
+import java.util.*
 
 @Composable
 fun AlarmScreen(
+    alarm: Alarm? = null,
     onStartTask: () -> Unit = {}
 ){
     CSCI3310ProjectTheme {
@@ -35,11 +38,22 @@ fun AlarmScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
             ) {
-                var date = "2005.04.16"
-                var dayInWeek = "Wednesday"
-                var time = "09:20"
-                var memo = "Commuting to school"
-
+                val calendar = Calendar.getInstance()
+                val date = "${calendar.get(Calendar.YEAR)}.${calendar.get(Calendar.MONTH) + 1}.${calendar.get(Calendar.DAY_OF_MONTH)}"
+                val dayInWeek = when(calendar.get(Calendar.DAY_OF_WEEK)) {
+                    Calendar.MONDAY -> "Monday"
+                    Calendar.TUESDAY -> "Tuesday"
+                    Calendar.WEDNESDAY -> "Wednesday"
+                    Calendar.THURSDAY -> "Thursday"
+                    Calendar.FRIDAY -> "Friday"
+                    Calendar.SATURDAY -> "Saturday"
+                    Calendar.SUNDAY -> "Sunday"
+                    else -> ""
+                }
+                val time = alarm?.let { 
+                    String.format("%02d:%02d", it.hour, it.minute)
+                } ?: String.format("%02d:%02d", calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE))
+                val memo = alarm?.label ?: ""
 
                 Text(
                     text = "$date  $dayInWeek",

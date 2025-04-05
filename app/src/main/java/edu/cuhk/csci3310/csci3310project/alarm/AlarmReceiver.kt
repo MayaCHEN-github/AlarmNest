@@ -91,6 +91,7 @@ class AlarmReceiver : BroadcastReceiver() {
             val serviceIntent = Intent(context, AlarmService::class.java).apply {
                 putExtra("alarm_id", alarmId)
                 putExtra("alarm_label", alarmLabel)
+                putExtra("send_broadcast", true)
             }
 
             context.startForegroundService(serviceIntent)
