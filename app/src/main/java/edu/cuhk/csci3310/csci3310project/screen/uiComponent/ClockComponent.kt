@@ -41,6 +41,8 @@ import edu.cuhk.csci3310.csci3310project.R
 import edu.cuhk.csci3310.csci3310project.alarm.storage.RepeatType
 import edu.cuhk.csci3310.csci3310project.screen.model.SubAlarmData
 import edu.cuhk.csci3310.csci3310project.ui.theme.CSCI3310ProjectTheme
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
 
 @Composable
 fun NextAlarmText(
@@ -80,20 +82,102 @@ fun WeekdayRow(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TimePickerDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (Int, Int) -> Unit,
+    initialHour: Int = 0,
+    initialMinute: Int = 0
+) {
+    val timeState = rememberTimePickerState(
+        initialHour = initialHour,
+        initialMinute = initialMinute
+    )
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = Color.White
+            )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = "Select Time",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 时间选择器
+                TimePicker(
+                    state = timeState
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 确认和取消按钮
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text("Cancel", color = Color.Black)
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    TextButton(
+                        onClick = {
+                            onConfirm(timeState.hour, timeState.minute)
+                            onDismiss()
+                        }
+                    ) {
+                        Text("Confirm", color = Color.Black)
+                    }
+                }
+            }
+        }
+    }
+}
+
 @Composable
 fun TimeDisplay(
     time: String,
     enabled: Boolean = true,
-    onClick: () -> Unit = {}
+    onTimeChange: ((Int, Int) -> Unit)? = null
 ) {
+    var showTimePicker by remember { mutableStateOf(false) }
+
     Text(
         text = time,
         fontSize = 48.sp,
         fontWeight = FontWeight.Normal,
         color = if (enabled) Color.White else Color.Gray,
         modifier = Modifier
-            .clickable { onClick() }
+            .clickable(enabled = enabled && onTimeChange != null) {
+                showTimePicker = true
+            }
     )
+
+    if (showTimePicker) {
+        val (hour, minute) = time.split(":").map { it.toInt() }
+        TimePickerDialog(
+            onDismiss = { showTimePicker = false },
+            onConfirm = { newHour, newMinute ->
+                onTimeChange?.invoke(newHour, newMinute)
+            },
+            initialHour = hour,
+            initialMinute = minute
+        )
+    }
 }
 
 @Composable
@@ -186,18 +270,18 @@ fun SubAlarmItem(
             fontSize = 14.sp,
             color = if (enabled) Color.White else Color.Gray
         )
-        
+
         Spacer(modifier = Modifier.width(8.dp))
-        
+
         // 描述
         Text(
             text = subAlarm.description,
             fontSize = 14.sp,
             color = if (enabled) Color.White else Color.Gray
         )
-        
+
         Spacer(modifier = Modifier.width(8.dp))
-        
+
         // 触发方式图标（如果有）
         if (subAlarm.triggerType != null && enabled) {
             val iconRes = when (subAlarm.triggerType) {
@@ -215,7 +299,7 @@ fun SubAlarmItem(
                 Spacer(modifier = Modifier.width(8.dp))
             }
         }
-        
+
         // 闹钟状态图标
         AlarmIcon(enabled = subAlarm.enabled && enabled)
     }
@@ -248,7 +332,7 @@ fun WeekdaySelectionDialog(
     initialCustomDays: String? = null
 ) {
     // 根据传入的customDays初始化selectedDays
-    var selectedDays by remember(initialCustomDays) { 
+    var selectedDays by remember(initialCustomDays) {
         mutableStateOf(
             if (initialCustomDays != null) {
                 val days = initialCustomDays.split(",").mapNotNull { it.toIntOrNull() }
@@ -261,7 +345,7 @@ fun WeekdaySelectionDialog(
             }
         )
     }
-    
+
     Dialog(onDismissRequest = onDismiss) {
         Card(
             modifier = Modifier
@@ -282,9 +366,9 @@ fun WeekdaySelectionDialog(
                     fontWeight = FontWeight.Bold,
                     color = Color.Black
                 )
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 // 星期选项
                 listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday").forEachIndexed { index, day ->
                     Row(
@@ -308,9 +392,9 @@ fun WeekdaySelectionDialog(
                         )
                     }
                 }
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 // 确认和取消按钮
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -351,7 +435,7 @@ fun RepeatTypeDialog(
 ) {
     var selectedType by remember(initialRepeatType) { mutableStateOf(initialRepeatType) }
     var showWeekdayDialog by remember { mutableStateOf(false) }
-    
+
     // 星期选择对话框
     if (showWeekdayDialog) {
         WeekdaySelectionDialog(
@@ -363,7 +447,7 @@ fun RepeatTypeDialog(
             initialCustomDays = initialCustomDays
         )
     }
-    
+
     // 主对话框
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -385,9 +469,9 @@ fun RepeatTypeDialog(
                     fontWeight = FontWeight.Bold,
                     color = Color.Black
                 )
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 // 重复模式选项
                 listOf(
                     RepeatType.ONCE,
@@ -404,7 +488,7 @@ fun RepeatTypeDialog(
                     ) {
                         RadioButton(
                             selected = selectedType == type,
-                            onClick = { 
+                            onClick = {
                                 selectedType = type
                                 if (type == RepeatType.CUSTOM) {
                                     showWeekdayDialog = true
@@ -429,9 +513,9 @@ fun RepeatTypeDialog(
                         )
                     }
                 }
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 // 确认和取消按钮
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -467,13 +551,13 @@ fun ClockItem(
     subAlarms: List<SubAlarmData> = emptyList(),
     repeatType: RepeatType = RepeatType.ONCE,
     customDays: String? = null,
-    onTimeClick: () -> Unit = {},
+    onTimeChange: ((Int, Int) -> Unit)? = null,
     onToggleEnabled: (Boolean) -> Unit = {},
     onRepeatTypeChanged: (RepeatType, String?) -> Unit = { _, _ -> }
 ) {
     var isEnabled by remember { mutableStateOf(initialEnabled) }
     var showRepeatDialog by remember { mutableStateOf(false) }
-    
+
     // 根据repeatType和customDays生成selectedDays
     val selectedDays = remember(repeatType, customDays) {
         when (repeatType) {
@@ -483,7 +567,7 @@ fun ClockItem(
             RepeatType.WEEKENDS -> List(7) { index -> index == 0 || index == 6 } // 0和6是周六和周日
             RepeatType.CUSTOM -> {
                 val days = customDays?.split(",")?.mapNotNull { it.toIntOrNull() } ?: emptyList()
-                List(7) { index -> 
+                List(7) { index ->
                     // 注意: index从0开始(周日到周六),而days中的数字从1开始(周一到周日)
                     // 所以需要将index转换为对应的星期数字
                     val dayNumber = if (index == 0) 7 else index // 周日是7,周一是1
@@ -509,7 +593,7 @@ fun ClockItem(
                 enabled = isEnabled,
                 onClick = { showRepeatDialog = true }
             )
-            
+
             // 重复模式选择对话框
             if (showRepeatDialog) {
                 RepeatTypeDialog(
@@ -521,7 +605,7 @@ fun ClockItem(
                     initialCustomDays = customDays
                 )
             }
-            
+
             // 时间和开关
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -531,7 +615,7 @@ fun ClockItem(
                 TimeDisplay(
                     time = time,
                     enabled = isEnabled,
-                    onClick = onTimeClick
+                    onTimeChange = onTimeChange
                 )
                 Row(
                     verticalAlignment = Alignment.CenterVertically
@@ -587,9 +671,9 @@ fun ClockItemPreview() {
                     SubAlarmData("+1:20", "Commuting to school", "walk", true)
                 )
             )
-            
+
             Spacer(modifier = Modifier.padding(16.dp))
-            
+
             // 禁用状态的闹钟，带有子闹钟
             ClockItem(
                 time = "12:30",

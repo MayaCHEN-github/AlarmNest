@@ -118,6 +118,25 @@ fun ClockListScreen(
                                     repeatType = repeatType,
                                     customDays = customDays
                                 )
+                            },
+                            onTimeChange = { newHour, newMinute ->
+                                Log.d("ClockListScreen", "收到时间更改请求: hour=$newHour, minute=$newMinute")
+                                Log.d("ClockListScreen", "当前闹钟数据: $alarm")
+                                
+                                // 从数据库获取完整的Alarm对象
+                                viewModel.updateAlarmTime(
+                                    alarm = Alarm(
+                                        id = alarm.id,
+                                        hour = alarm.time.split(":")[0].toInt(),
+                                        minute = alarm.time.split(":")[1].toInt(),
+                                        repeatType = alarm.repeatType,
+                                        customDays = alarm.customDays,
+                                        label = alarm.description,
+                                        isEnabled = alarm.initialEnabled
+                                    ),
+                                    hour = newHour,
+                                    minute = newMinute
+                                )
                             }
                         )
                     }
