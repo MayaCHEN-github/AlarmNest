@@ -23,7 +23,9 @@ import edu.cuhk.csci3310.csci3310project.R
 import edu.cuhk.csci3310.csci3310project.ui.theme.CSCI3310ProjectTheme
 
 @Composable
-fun AlarmScreen(){
+fun AlarmScreen(
+    onStartTask: () -> Unit = {}
+){
     CSCI3310ProjectTheme {
         Scaffold () { paddingValues ->
             Column (
@@ -68,7 +70,7 @@ fun AlarmScreen(){
                 Spacer(modifier = Modifier.size(15.dp))
 
                 Button(
-                    onClick = { /*TODO*/ },
+                    onClick = onStartTask,
                     modifier = Modifier.padding(top = 16.dp)
                 ) {
                     Text(

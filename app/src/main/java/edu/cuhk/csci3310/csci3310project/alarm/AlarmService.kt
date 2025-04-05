@@ -252,7 +252,7 @@ class AlarmService : Service() {
             // 创建打开应用的Intent
             val openAppIntent = Intent(this, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                putExtra("stop_alarm", true)
+                putExtra("navigate_to", "alarm_screen")
             }
             val openAppPendingIntent = PendingIntent.getActivity(
                 this,
@@ -260,6 +260,10 @@ class AlarmService : Service() {
                 openAppIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
+
+            // 发送广播来触发导航
+            val broadcastIntent = Intent("edu.cuhk.csci3310.csci3310project.NAVIGATE_TO_ALARM")
+            sendBroadcast(broadcastIntent)
 
             return NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(android.R.drawable.ic_dialog_alert)

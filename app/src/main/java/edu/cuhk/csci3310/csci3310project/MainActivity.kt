@@ -1,6 +1,9 @@
 package edu.cuhk.csci3310.csci3310project
 
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -15,10 +18,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import edu.cuhk.csci3310.csci3310project.alarm.AlarmPermission
 import edu.cuhk.csci3310.csci3310project.alarm.AlarmReceiver
 import edu.cuhk.csci3310.csci3310project.alarm.AlarmTest
 import edu.cuhk.csci3310.csci3310project.screen.AlarmOffScreen
+import edu.cuhk.csci3310.csci3310project.screen.AlarmScreen
 import edu.cuhk.csci3310.csci3310project.screen.ClockListScreen
 import edu.cuhk.csci3310.csci3310project.screen.viewmodel.ClockListScreenViewModel
 import edu.cuhk.csci3310.csci3310project.sensor.StepCounterViewModel
@@ -27,10 +36,26 @@ import edu.cuhk.csci3310.csci3310project.ui.theme.CSCI3310ProjectTheme
 
 class MainActivity : ComponentActivity() {
     lateinit var stepCounterViewModel: StepCounterViewModel
+    private lateinit var navController: NavHostController
+    private val navigationReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == "edu.cuhk.csci3310.csci3310project.NAVIGATE_TO_ALARM") {
+                // 检查当前路由，如果不是alarm_screen才跳转
+                if (navController.currentDestination?.route != "alarm_screen") {
+                    navController.navigate("alarm_screen") {
+                        popUpTo("clock_list_screen") { inclusive = true }
+                    }
+                }
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.d("MainActivity", "onCreate called")
+        
+        // 注册广播接收器
+        registerReceiver(navigationReceiver, IntentFilter("edu.cuhk.csci3310.csci3310project.NAVIGATE_TO_ALARM"))
         
         // 检查是否需要停止闹钟
         if (intent?.getBooleanExtra("stop_alarm", false) == true) {
@@ -47,6 +72,21 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             CSCI3310ProjectTheme {
+                navController = rememberNavController()
+                
+                // 处理从通知进入的情况
+                LaunchedEffect(Unit) {
+                    if (intent?.getStringExtra("navigate_to") == "alarm_screen") {
+                        if (intent.getBooleanExtra("send_broadcast", false)) {
+                            val broadcastIntent = Intent("edu.cuhk.csci3310.csci3310project.NAVIGATE_TO_ALARM")
+                            sendBroadcast(broadcastIntent)
+                        }
+                        navController.navigate("alarm_screen") {
+                            popUpTo("clock_list_screen") { inclusive = true }
+                        }
+                    }
+                }
+                
                 if (AlarmPermission.shouldShowStoragePermissionDialog()) {
                     AlertDialog(
                         onDismissRequest = { AlarmPermission.setShowStoragePermissionDialog(false) },
@@ -67,12 +107,35 @@ class MainActivity : ComponentActivity() {
                         }
                     )
                 }
-                TestScreen(this)
+                
+                NavHost(
+                    navController = navController,
+                    startDestination = "clock_list_screen"
+                ) {
+                    composable("clock_list_screen") {
+                        TestScreen(activity = this@MainActivity)
+                    }
+                    composable("alarm_screen") {
+                        AlarmScreen(
+                            onStartTask = {
+                                stopAlarm()
+                                navController.navigate("clock_list_screen") {
+                                    popUpTo("alarm_screen") { inclusive = true }
+                                }
+                            }
+                        )
+                    }
+                }
             }
         }
         
         // 检查并请求权限
         AlarmPermission.checkAndRequestPermissions(this)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        unregisterReceiver(navigationReceiver)
     }
 
     override fun onResume() {
