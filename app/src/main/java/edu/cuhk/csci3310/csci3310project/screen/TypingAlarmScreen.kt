@@ -10,8 +10,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -19,7 +17,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -40,6 +37,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import edu.cuhk.csci3310.csci3310project.R
 import edu.cuhk.csci3310.csci3310project.screen.uiComponent.ComparisonTextField
+import edu.cuhk.csci3310.csci3310project.screen.uiComponent.MotivationalQuotes
 import edu.cuhk.csci3310.csci3310project.ui.theme.CSCI3310ProjectTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -47,6 +45,11 @@ import edu.cuhk.csci3310.csci3310project.ui.theme.CSCI3310ProjectTheme
 fun AlarmTypingScreen(navController: NavController) {
     val context = LocalContext.current
     var isInputCorrect by remember { mutableStateOf(false) }
+    
+    // 随机选择一个励志小语
+    val randomQuote = remember {
+        MotivationalQuotes.quotes.random()
+    }
     
     CSCI3310ProjectTheme{
         Scaffold(
@@ -126,7 +129,7 @@ fun AlarmTypingScreen(navController: NavController) {
                 Spacer(modifier = Modifier.size(5.dp))
 
                 ComparisonTextField(
-                    promptText = "The quick brown fox jumps over the lazy dog.",
+                    promptText = randomQuote,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 15.dp),
                     fontSize = 20,
                     onInputStateChange = { correct -> isInputCorrect = correct }
