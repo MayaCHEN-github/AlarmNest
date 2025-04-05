@@ -1,0 +1,159 @@
+package edu.cuhk.csci3310.csci3310project.alarm
+
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.app.Service
+import android.content.Context
+import android.content.Intent
+import android.os.Build
+import android.os.IBinder
+import android.os.PowerManager
+import android.util.Log
+import androidx.core.app.NotificationCompat
+import edu.cuhk.csci3310.csci3310project.MainActivity
+
+class AlarmService : Service() {
+    companion object {
+        private const val CHANNEL_ID = "alarm_channel"
+        private const val NOTIFICATION_ID = 1
+        private const val WAKE_LOCK_TAG = "AlarmService::WakeLock"
+        private const val TAG = "AlarmService"
+    }
+
+    private var wakeLock: PowerManager.WakeLock? = null
+    private var currentIntent: Intent? = null
+
+    override fun onCreate() {
+        super.onCreate()
+        Log.d(TAG, "服务已创建")
+        
+        try {
+            // 创建通知渠道
+            createNotificationChannel()
+            
+            // 获取 WakeLock
+            val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+            wakeLock = powerManager.newWakeLock(
+                PowerManager.PARTIAL_WAKE_LOCK,
+                WAKE_LOCK_TAG
+            )
+            Log.d(TAG, "WakeLock初始化成功")
+        } catch (e: Exception) {
+            Log.e(TAG, "服务创建过程中发生错误: ${e.message}", e)
+        }
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        Log.d(TAG, "服务开始启动，flags: $flags, startId: $startId")
+        currentIntent = intent
+        
+        // 创建一个最基本的通知
+        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_dialog_alert)
+            .setContentTitle("闹钟服务")
+            .setContentText("闹钟服务正在运行")
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .build()
+        
+        // 立即启动前台服务
+        startForeground(NOTIFICATION_ID, notification)
+        Log.d(TAG, "前台服务已启动")
+        
+        // 获取 WakeLock
+        wakeLock?.let {
+            if (!it.isHeld) {
+                it.acquire(10*60*1000L /*10 minutes*/)
+                Log.d(TAG, "WakeLock已获取")
+            }
+        }
+        
+        // 创建并更新完整的通知
+        try {
+            val fullNotification = createNotification()
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.notify(NOTIFICATION_ID, fullNotification)
+        } catch (e: Exception) {
+            Log.e(TAG, "创建通知失败: ${e.message}", e)
+        }
+        
+        return START_STICKY
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        Log.d(TAG, "服务已销毁")
+        
+        try {
+            // 释放 WakeLock
+            wakeLock?.let {
+                if (it.isHeld) {
+                    it.release()
+                    Log.d(TAG, "WakeLock已释放")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "释放WakeLock时发生错误: ${e.message}", e)
+        }
+    }
+
+    override fun onBind(intent: Intent?): IBinder? {
+        return null
+    }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                val name = "闹钟通知"
+                val descriptionText = "显示闹钟提醒"
+                val importance = NotificationManager.IMPORTANCE_HIGH
+                val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
+                    description = descriptionText
+                    enableVibration(true)
+                    setShowBadge(true)
+                    setBypassDnd(true)
+                }
+
+                val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                notificationManager.createNotificationChannel(channel)
+                Log.d(TAG, "通知渠道创建成功")
+            } catch (e: Exception) {
+                Log.e(TAG, "创建通知渠道失败: ${e.message}", e)
+            }
+        }
+    }
+
+    private fun createNotification(): Notification {
+        try {
+            val alarmLabel = currentIntent?.getStringExtra("alarm_label") ?: "闹钟提醒"
+            
+            // 创建打开应用的Intent
+            val openAppIntent = Intent(this, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
+            val openAppPendingIntent = PendingIntent.getActivity(
+                this,
+                0,
+                openAppIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+
+            return NotificationCompat.Builder(this, CHANNEL_ID)
+                .setSmallIcon(android.R.drawable.ic_dialog_alert)
+                .setContentTitle(alarmLabel)
+                .setContentText("到设定的时间了！")
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setAutoCancel(false)
+                .setOngoing(true)
+                .setVibrate(longArrayOf(0, 1000, 500, 1000))
+                .setDefaults(NotificationCompat.DEFAULT_ALL)
+                .setContentIntent(openAppPendingIntent)
+                .build()
+        } catch (e: Exception) {
+            Log.e(TAG, "创建通知失败: ${e.message}", e)
+            throw e
+        }
+    }
+} 

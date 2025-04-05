@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import edu.cuhk.csci3310.csci3310project.alarm.storage.*
 import edu.cuhk.csci3310.csci3310project.screen.model.AlarmData
 import edu.cuhk.csci3310.csci3310project.screen.model.SubAlarmData
+import edu.cuhk.csci3310.csci3310project.alarm.AlarmManager
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.*
@@ -182,7 +183,19 @@ open class ClockListScreenViewModel(private val context: Context) : ViewModel() 
     fun toggleAlarmEnabled(alarm: Alarm) {
         viewModelScope.launch {
             try {
+                // 更新数据库中的闹钟状态
                 AlarmDatabaseFacade.toggleAlarmEnabled(context, alarm)
+                
+                // 如果闹钟被启用，设置系统闹钟
+                if (alarm.isEnabled) {
+                    val calendar = Calendar.getInstance().apply {
+                        set(Calendar.HOUR_OF_DAY, alarm.hour)
+                        set(Calendar.MINUTE, alarm.minute)
+                        set(Calendar.SECOND, 0)
+                        set(Calendar.MILLISECOND, 0)
+                    }
+                    AlarmManager.setAlarm(context, calendar, alarm)
+                }
             } catch (e: Exception) {
                 _uiState.update { 
                     it.copy(error = "更新闹钟状态失败: ${e.message}")
@@ -223,6 +236,18 @@ open class ClockListScreenViewModel(private val context: Context) : ViewModel() 
                 
                 android.util.Log.d("ClockListScreenViewModel", "更新后的闹钟数据: $updatedAlarm")
                 AlarmDatabaseFacade.updateAlarm(context, updatedAlarm)
+                
+                // 如果闹钟是启用的，设置系统闹钟
+                if (updatedAlarm.isEnabled) {
+                    val calendar = Calendar.getInstance().apply {
+                        set(Calendar.HOUR_OF_DAY, updatedAlarm.hour)
+                        set(Calendar.MINUTE, updatedAlarm.minute)
+                        set(Calendar.SECOND, 0)
+                        set(Calendar.MILLISECOND, 0)
+                    }
+                    AlarmManager.setAlarm(context, calendar, updatedAlarm)
+                }
+                
                 android.util.Log.d("ClockListScreenViewModel", "数据库更新成功")
                 
                 // 重新加载闹钟列表以确保UI更新
@@ -249,6 +274,18 @@ open class ClockListScreenViewModel(private val context: Context) : ViewModel() 
                 
                 android.util.Log.d("ClockListScreenViewModel", "更新后的闹钟数据: $updatedAlarm")
                 AlarmDatabaseFacade.updateAlarm(context, updatedAlarm)
+                
+                // 如果闹钟是启用的，设置系统闹钟
+                if (updatedAlarm.isEnabled) {
+                    val calendar = Calendar.getInstance().apply {
+                        set(Calendar.HOUR_OF_DAY, hour)
+                        set(Calendar.MINUTE, minute)
+                        set(Calendar.SECOND, 0)
+                        set(Calendar.MILLISECOND, 0)
+                    }
+                    AlarmManager.setAlarm(context, calendar, updatedAlarm)
+                }
+                
                 android.util.Log.d("ClockListScreenViewModel", "数据库更新成功")
                 
                 // 重新加载闹钟列表以确保UI更新
@@ -274,6 +311,18 @@ open class ClockListScreenViewModel(private val context: Context) : ViewModel() 
                 
                 android.util.Log.d("ClockListScreenViewModel", "更新后的闹钟数据: $updatedAlarm")
                 AlarmDatabaseFacade.updateAlarm(context, updatedAlarm)
+                
+                // 如果闹钟是启用的，重新设置系统闹钟以确保状态正确
+                if (updatedAlarm.isEnabled) {
+                    val calendar = Calendar.getInstance().apply {
+                        set(Calendar.HOUR_OF_DAY, updatedAlarm.hour)
+                        set(Calendar.MINUTE, updatedAlarm.minute)
+                        set(Calendar.SECOND, 0)
+                        set(Calendar.MILLISECOND, 0)
+                    }
+                    AlarmManager.setAlarm(context, calendar, updatedAlarm)
+                }
+                
                 android.util.Log.d("ClockListScreenViewModel", "数据库更新成功")
                 
                 // 重新加载闹钟列表以确保UI更新
