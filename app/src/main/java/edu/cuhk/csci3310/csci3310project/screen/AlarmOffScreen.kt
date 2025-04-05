@@ -27,7 +27,9 @@ import edu.cuhk.csci3310.csci3310project.ui.theme.CSCI3310ProjectTheme
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.font.FontFamily
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -69,27 +71,20 @@ fun AlarmOffScreen(previewScale: Float? = null){
                     text = "Good Job!",
                     fontSize = 26.sp
                 )
+
+
                 Button(
                     onClick = { /*TODO*/ },
                     modifier = Modifier.padding(top = 16.dp)
                 ) {
-                    Text(text = "Back to Home")
+                    Text(
+                        text = "BACK TO HOME",
+                        fontFamily = FontFamily.Default
+                    )
                 }
             }
         }
     }
-}
-
-@Preview(name = "动画开始状态")
-@Composable
-fun AlarmOffScreenPreviewStart() {
-    AlarmOffScreen(previewScale = 0f)
-}
-
-@Preview(name = "动画中间状态")
-@Composable
-fun AlarmOffScreenPreviewMiddle() {
-    AlarmOffScreen(previewScale = 0.5f)
 }
 
 @Preview(name = "动画结束状态")
