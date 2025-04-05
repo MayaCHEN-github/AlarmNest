@@ -600,6 +600,34 @@ open class ClockListScreenViewModel(private val context: Context) : ViewModel() 
         }
     }
     
+    // 添加子闹钟
+    fun addSubAlarm(parentAlarm: Alarm, subAlarm: SubAlarm) {
+        viewModelScope.launch {
+            try {
+                android.util.Log.d("ClockListScreenViewModel", "开始添加子闹钟: parentAlarmId=${parentAlarm.id}")
+                
+                // 添加子闹钟到数据库
+                AlarmDatabaseFacade.addSubAlarm(
+                    context = context,
+                    parentAlarmId = parentAlarm.id,
+                    timeOffsetMinutes = subAlarm.timeOffsetMinutes,
+                    dismissType = subAlarm.dismissType,
+                    label = subAlarm.label
+                )
+                
+                android.util.Log.d("ClockListScreenViewModel", "子闹钟添加成功")
+                
+                // 重新加载闹钟列表以确保UI更新
+                loadAlarms()
+            } catch (e: Exception) {
+                android.util.Log.e("ClockListScreenViewModel", "添加子闹钟失败", e)
+                _uiState.update { 
+                    it.copy(error = "添加子闹钟失败: ${e.message}")
+                }
+            }
+        }
+    }
+    
     // ViewModel工厂
     class Factory(private val context: Context) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {

@@ -269,6 +269,33 @@ fun ClockListScreen(
                                 )
                                 
                                 viewModel.updateSubAlarmTimeDiff(parentAlarm, subAlarmEntity, newTimeDiffMinutes)
+                            },
+                            onAddSubAlarm = {
+                                Log.d("ClockListScreen", "收到添加子闹钟请求")
+                                Log.d("ClockListScreen", "当前闹钟数据: $alarm")
+                                
+                                // 从数据库获取完整的Alarm对象
+                                val parentAlarm = Alarm(
+                                    id = alarm.id,
+                                    hour = alarm.time.split(":")[0].toInt(),
+                                    minute = alarm.time.split(":")[1].toInt(),
+                                    repeatType = alarm.repeatType,
+                                    customDays = alarm.customDays,
+                                    label = alarm.description,
+                                    isEnabled = alarm.initialEnabled
+                                )
+                                
+                                // 创建新的子闹钟
+                                val newSubAlarm = SubAlarm(
+                                    id = 0, // 新子闹钟的ID将由数据库自动生成
+                                    parentAlarmId = alarm.id,
+                                    timeOffsetMinutes = 0, // 默认时间差为0
+                                    dismissType = DismissType.NO_ALARM, // 默认无触发方式
+                                    label = "new subalarm", // 默认描述
+                                    isEnabled = true // 默认启用
+                                )
+                                
+                                viewModel.addSubAlarm(parentAlarm, newSubAlarm)
                             }
                         )
                     }

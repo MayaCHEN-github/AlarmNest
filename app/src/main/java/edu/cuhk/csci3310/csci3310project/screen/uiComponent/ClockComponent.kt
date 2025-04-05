@@ -611,7 +611,8 @@ fun SubAlarmList(
     subAlarms: List<SubAlarmData>,
     enabled: Boolean = true,
     onSubAlarmDelete: (SubAlarmData) -> Unit = {},
-    onSubAlarmTimeDiffChange: (SubAlarmData, Int) -> Unit = { _, _ -> }
+    onSubAlarmTimeDiffChange: (SubAlarmData, Int) -> Unit = { _, _ -> },
+    onAddSubAlarm: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -626,6 +627,24 @@ fun SubAlarmList(
                 onTimeDiffChange = { newTimeDiffMinutes ->
                     onSubAlarmTimeDiffChange(subAlarm, newTimeDiffMinutes)
                 }
+            )
+        }
+        
+        // 添加新子闹钟按钮
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.End
+        ) {
+            Text(
+                text = "Add new subAlarm",
+                fontSize = 14.sp,
+                color = Color.Gray,
+                modifier = Modifier
+                    .clickable(enabled = enabled) {
+                        onAddSubAlarm()
+                    }
             )
         }
     }
@@ -864,7 +883,8 @@ fun ClockItem(
     onDescriptionChange: ((String) -> Unit)? = null,
     onDelete: () -> Unit = {},
     onSubAlarmDelete: (SubAlarmData) -> Unit = {},
-    onSubAlarmTimeDiffChange: (SubAlarmData, Int) -> Unit = { _, _ -> }
+    onSubAlarmTimeDiffChange: (SubAlarmData, Int) -> Unit = { _, _ -> },
+    onAddSubAlarm: () -> Unit = {}
 ) {
     var isEnabled by remember { mutableStateOf(initialEnabled) }
     var showRepeatDialog by remember { mutableStateOf(false) }
@@ -971,15 +991,14 @@ fun ClockItem(
                 onDescriptionChange = onDescriptionChange
             )
             
-            // 子闹钟列表
-            if (subAlarms.isNotEmpty()) {
-                SubAlarmList(
-                    subAlarms = subAlarms,
-                    enabled = isEnabled,
-                    onSubAlarmDelete = onSubAlarmDelete,
-                    onSubAlarmTimeDiffChange = onSubAlarmTimeDiffChange
-                )
-            }
+            // 子闹钟列表 - 始终显示
+            SubAlarmList(
+                subAlarms = subAlarms,
+                enabled = isEnabled,
+                onSubAlarmDelete = onSubAlarmDelete,
+                onSubAlarmTimeDiffChange = onSubAlarmTimeDiffChange,
+                onAddSubAlarm = onAddSubAlarm
+            )
         }
     }
 
