@@ -262,6 +262,31 @@ open class ClockListScreenViewModel(private val context: Context) : ViewModel() 
         }
     }
     
+    // 更新闹钟描述
+    fun updateAlarmDescription(alarm: Alarm, description: String) {
+        viewModelScope.launch {
+            try {
+                android.util.Log.d("ClockListScreenViewModel", "开始更新闹钟描述: alarmId=${alarm.id}, description=$description")
+                
+                val updatedAlarm = alarm.copy(
+                    label = description
+                )
+                
+                android.util.Log.d("ClockListScreenViewModel", "更新后的闹钟数据: $updatedAlarm")
+                AlarmDatabaseFacade.updateAlarm(context, updatedAlarm)
+                android.util.Log.d("ClockListScreenViewModel", "数据库更新成功")
+                
+                // 重新加载闹钟列表以确保UI更新
+                loadAlarms()
+            } catch (e: Exception) {
+                android.util.Log.e("ClockListScreenViewModel", "更新闹钟描述失败", e)
+                _uiState.update { 
+                    it.copy(error = "更新闹钟描述失败: ${e.message}")
+                }
+            }
+        }
+    }
+    
     // 创建测试数据
     fun createTestData() {
         viewModelScope.launch {

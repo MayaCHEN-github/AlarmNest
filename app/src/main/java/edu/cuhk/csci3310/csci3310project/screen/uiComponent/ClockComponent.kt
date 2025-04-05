@@ -222,11 +222,80 @@ fun ActionIcons(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AlarmDescriptionDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit,
+    initialDescription: String = ""
+) {
+    var description by remember { mutableStateOf(initialDescription) }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = Color.White
+            )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = "Edit Description",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        focusedBorderColor = Color.Black,
+                        unfocusedBorderColor = Color.Gray
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text("Cancel", color = Color.Black)
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    TextButton(
+                        onClick = {
+                            onConfirm(description)
+                            onDismiss()
+                        }
+                    ) {
+                        Text("Confirm", color = Color.Black)
+                    }
+                }
+            }
+        }
+    }
+}
+
 @Composable
 fun AlarmDescription(
     description: String,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    onDescriptionChange: ((String) -> Unit)? = null
 ) {
+    var showDialog by remember { mutableStateOf(false) }
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
@@ -234,9 +303,24 @@ fun AlarmDescription(
         Text(
             text = description,
             fontSize = 14.sp,
-            color = if (enabled) Color.White else Color.Gray
+            color = if (enabled) Color.White else Color.Gray,
+            modifier = Modifier
+                .weight(1f)
+                .clickable(enabled = enabled && onDescriptionChange != null) {
+                    showDialog = true
+                }
         )
         ActionIcons(enabled = enabled)
+    }
+
+    if (showDialog) {
+        AlarmDescriptionDialog(
+            onDismiss = { showDialog = false },
+            onConfirm = { newDescription ->
+                onDescriptionChange?.invoke(newDescription)
+            },
+            initialDescription = description
+        )
     }
 }
 
@@ -554,7 +638,8 @@ fun ClockItem(
     customDays: String? = null,
     onTimeChange: ((Int, Int) -> Unit)? = null,
     onToggleEnabled: (Boolean) -> Unit = {},
-    onRepeatTypeChanged: (RepeatType, String?) -> Unit = { _, _ -> }
+    onRepeatTypeChanged: (RepeatType, String?) -> Unit = { _, _ -> },
+    onDescriptionChange: ((String) -> Unit)? = null
 ) {
     var isEnabled by remember { mutableStateOf(initialEnabled) }
     var showRepeatDialog by remember { mutableStateOf(false) }
@@ -643,7 +728,8 @@ fun ClockItem(
             // 闹钟描述
             AlarmDescription(
                 description = description,
-                enabled = isEnabled
+                enabled = isEnabled,
+                onDescriptionChange = onDescriptionChange
             )
             
             // 子闹钟列表

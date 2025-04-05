@@ -137,6 +137,24 @@ fun ClockListScreen(
                                     hour = newHour,
                                     minute = newMinute
                                 )
+                            },
+                            onDescriptionChange = { newDescription ->
+                                Log.d("ClockListScreen", "收到描述更改请求: description=$newDescription")
+                                Log.d("ClockListScreen", "当前闹钟数据: $alarm")
+                                
+                                // 从数据库获取完整的Alarm对象
+                                viewModel.updateAlarmDescription(
+                                    alarm = Alarm(
+                                        id = alarm.id,
+                                        hour = alarm.time.split(":")[0].toInt(),
+                                        minute = alarm.time.split(":")[1].toInt(),
+                                        repeatType = alarm.repeatType,
+                                        customDays = alarm.customDays,
+                                        label = alarm.description,
+                                        isEnabled = alarm.initialEnabled
+                                    ),
+                                    description = newDescription
+                                )
                             }
                         )
                     }
