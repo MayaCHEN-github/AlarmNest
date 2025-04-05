@@ -13,9 +13,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import edu.cuhk.csci3310.csci3310project.alarm.AlarmPermission
 import edu.cuhk.csci3310.csci3310project.alarm.AlarmTest
 import edu.cuhk.csci3310.csci3310project.screen.AlarmOffScreen
+import edu.cuhk.csci3310.csci3310project.screen.ClockListScreen
+import edu.cuhk.csci3310.csci3310project.screen.viewmodel.ClockListScreenViewModel
 import edu.cuhk.csci3310.csci3310project.sensor.StepCounterViewModel
 import edu.cuhk.csci3310.csci3310project.sensor.StepCounterUI
 import edu.cuhk.csci3310.csci3310project.ui.theme.CSCI3310ProjectTheme
@@ -102,5 +105,8 @@ fun MainScreen(activity: MainActivity) {
 
 @Composable
 fun TestScreen(activity: MainActivity){
-    AlarmOffScreen()
+    val viewModel: ClockListScreenViewModel = viewModel(
+        factory = ClockListScreenViewModel.Factory(activity)
+    )
+    ClockListScreen(viewModel = viewModel)
 }
