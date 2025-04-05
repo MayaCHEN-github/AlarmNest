@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import edu.cuhk.csci3310.csci3310project.alarm.AlarmPermission
 import edu.cuhk.csci3310.csci3310project.alarm.AlarmTest
+import edu.cuhk.csci3310.csci3310project.screen.AlarmOffScreen
 import edu.cuhk.csci3310.csci3310project.sensor.StepCounterViewModel
 import edu.cuhk.csci3310.csci3310project.sensor.StepCounterUI
 import edu.cuhk.csci3310.csci3310project.ui.theme.CSCI3310ProjectTheme
@@ -56,7 +57,7 @@ class MainActivity : ComponentActivity() {
                         }
                     )
                 }
-                MainScreen(this)
+                TestScreen(this)
             }
         }
         
@@ -97,4 +98,9 @@ fun MainScreen(activity: MainActivity) {
             AlarmTest(activity, innerPadding)
         }
     }
+}
+
+@Composable
+fun TestScreen(activity: MainActivity){
+    AlarmOffScreen()
 }

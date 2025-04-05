@@ -1,4 +1,6 @@
 [versions]
+accompanistSvg = "0.24.13-rc"
+accompanistSvgVersion = "0.30.1"
 agp = "8.8.2"
 comGoogleDevtoolsKspGradlePlugin = "2.0.21-1.0.27"
 kotlin = "2.0.0"
@@ -15,6 +17,8 @@ roomRuntime = "2.6.1"
 roomKtx = "2.6.1"
 
 [libraries]
+accompanist-svg = { module = "com.google.accompanist:accompanist-svg", version.ref = "accompanistSvg" }
+accompanist-svg-v0301 = { module = "com.google.accompanist:accompanist-svg", version.ref = "accompanistSvgVersion" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "roomCompiler" }
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "roomKtx" }
