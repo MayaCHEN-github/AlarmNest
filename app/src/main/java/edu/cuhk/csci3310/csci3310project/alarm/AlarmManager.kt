@@ -64,7 +64,7 @@ object AlarmManager {
         }
     }
 
-    private fun calculateNextTriggerTime(calendar: Calendar, alarm: Alarm): Calendar? {
+    fun calculateNextTriggerTime(calendar: Calendar, alarm: Alarm): Calendar? {
         val now = Calendar.getInstance()
         val targetTime = calendar.clone() as Calendar
         

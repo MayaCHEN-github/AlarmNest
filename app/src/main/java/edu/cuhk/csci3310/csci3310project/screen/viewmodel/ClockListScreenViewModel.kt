@@ -143,36 +143,43 @@ open class ClockListScreenViewModel(private val context: Context) : ViewModel() 
                 set(Calendar.MINUTE, alarm.minute)
                 set(Calendar.SECOND, 0)
                 set(Calendar.MILLISECOND, 0)
-                
-                // 如果闹钟时间已经过去，设置为明天
-                if (before(now)) {
-                    add(Calendar.DAY_OF_MONTH, 1)
-                }
             }
-            alarmTime.timeInMillis - now.timeInMillis
+            
+            // 计算下一个触发时间
+            val nextTriggerTime = AlarmManager.calculateNextTriggerTime(alarmTime, alarm)
+            if (nextTriggerTime == null) {
+                return@minByOrNull Long.MAX_VALUE
+            }
+            nextTriggerTime.timeInMillis - now.timeInMillis
         }
         
         if (nextAlarm == null) {
             return "No alarm enabled.\nEnjoy your time!"
         }
         
-        // 计算时间差
+        // 计算下一个触发时间
         val nextTime = Calendar.getInstance().apply {
             set(Calendar.HOUR_OF_DAY, nextAlarm.hour)
             set(Calendar.MINUTE, nextAlarm.minute)
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
-            if (before(now)) {
-                add(Calendar.DAY_OF_MONTH, 1)
-            }
         }
         
-        val diffMillis = nextTime.timeInMillis - now.timeInMillis
+        val nextTriggerTime = AlarmManager.calculateNextTriggerTime(nextTime, nextAlarm)
+        if (nextTriggerTime == null) {
+            return "No alarm enabled.\nEnjoy your time!"
+        }
+        
+        val diffMillis = nextTriggerTime.timeInMillis - now.timeInMillis
         val diffMinutes = diffMillis / (1000 * 60)
         val hours = diffMinutes / 60
         val minutes = diffMinutes % 60
         
+        // 计算天数差
+        val days = diffMinutes / (24 * 60)
+        
         return when {
+            days > 0 -> "$days day${if (days > 1) "s" else ""} $hours hour${if (hours > 1) "s" else ""}\ntill the next alarm..."
             hours > 0 -> "$hours hour${if (hours > 1) "s" else ""} $minutes minute${if (minutes > 1) "s" else ""}\ntill the next alarm..."
             minutes > 0 -> "$minutes minute${if (minutes > 1) "s" else ""}\ntill the next alarm..."
             else -> "Alarm is about to ring..."
