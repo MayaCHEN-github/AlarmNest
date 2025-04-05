@@ -250,6 +250,13 @@ class AlarmService : Service() {
             val alarmId = currentIntent?.getLongExtra("alarm_id", -1) ?: -1
             val isSubAlarm = currentIntent?.getBooleanExtra("is_sub_alarm", false) ?: false
             val alarmLabel = currentIntent?.getStringExtra("alarm_label") ?: "闹钟提醒"
+            val alarmHour = currentIntent?.getIntExtra("alarm_hour", 0) ?: 0
+            val alarmMinute = currentIntent?.getIntExtra("alarm_minute", 0) ?: 0
+            val alarmRepeatType = currentIntent?.getStringExtra("alarm_repeat_type") ?: "ONCE"
+            val alarmCustomDays = currentIntent?.getStringExtra("alarm_custom_days")
+            val alarmDismissType = currentIntent?.getStringExtra("alarm_dismiss_type") ?: "NO_ALARM"
+            val alarmTriggerType = currentIntent?.getStringExtra("alarm_trigger_type") ?: "TIME"
+            val alarmIsEnabled = currentIntent?.getBooleanExtra("alarm_is_enabled", true) ?: true
             
             // 创建打开应用的Intent
             val openAppIntent = Intent(this, MainActivity::class.java).apply {
@@ -258,6 +265,13 @@ class AlarmService : Service() {
                 putExtra("alarm_id", alarmId)
                 putExtra("is_sub_alarm", isSubAlarm)
                 putExtra("alarm_label", alarmLabel)
+                putExtra("alarm_hour", alarmHour)
+                putExtra("alarm_minute", alarmMinute)
+                putExtra("alarm_repeat_type", alarmRepeatType)
+                putExtra("alarm_custom_days", alarmCustomDays)
+                putExtra("alarm_dismiss_type", alarmDismissType)
+                putExtra("alarm_trigger_type", alarmTriggerType)
+                putExtra("alarm_is_enabled", alarmIsEnabled)
             }
             val openAppPendingIntent = PendingIntent.getActivity(
                 this,

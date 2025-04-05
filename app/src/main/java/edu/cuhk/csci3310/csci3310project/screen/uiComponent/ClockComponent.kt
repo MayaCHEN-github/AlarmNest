@@ -460,7 +460,7 @@ fun TimeDiffDialog(
 
                 // 时间差显示
                 Text(
-                    text = "${if (timeDiffMinutes >= 0) "+" else ""}${hours}:${String.format("%02d", minutes.absoluteValue)}",
+                    text = "${if (timeDiffMinutes >= 0) "+" else "-"}${hours.absoluteValue}:${String.format("%02d", minutes.absoluteValue)}",
                     fontSize = 24.sp,
                     color = Color.Black,
                     modifier = Modifier.align(Alignment.CenterHorizontally)

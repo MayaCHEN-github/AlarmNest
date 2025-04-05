@@ -25,6 +25,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavBackStackEntry
 import edu.cuhk.csci3310.csci3310project.alarm.AlarmPermission
 import edu.cuhk.csci3310.csci3310project.alarm.AlarmReceiver
 import edu.cuhk.csci3310.csci3310project.alarm.AlarmTest
@@ -38,6 +39,9 @@ import edu.cuhk.csci3310.csci3310project.screen.viewmodel.ClockListScreenViewMod
 import edu.cuhk.csci3310.csci3310project.sensor.StepCounterViewModel
 import edu.cuhk.csci3310.csci3310project.sensor.StepCounterUI
 import edu.cuhk.csci3310.csci3310project.ui.theme.CSCI3310ProjectTheme
+import edu.cuhk.csci3310.csci3310project.alarm.storage.RepeatType
+import edu.cuhk.csci3310.csci3310project.alarm.storage.DismissType
+import edu.cuhk.csci3310.csci3310project.alarm.storage.TriggerType
 
 class MainActivity : ComponentActivity() {
     lateinit var stepCounterViewModel: StepCounterViewModel
@@ -48,7 +52,11 @@ class MainActivity : ComponentActivity() {
                 // 只在特定界面才跳转到 alarm_screen
                 val currentRoute = navController.currentDestination?.route
                 if (currentRoute == "clock_list_screen") {
-                    navController.navigate("alarm_screen") {
+                    val alarmId = intent.getLongExtra("alarm_id", -1)
+                    val isSubAlarm = intent.getBooleanExtra("is_sub_alarm", false)
+                    val alarmLabel = intent.getStringExtra("alarm_label") ?: "闹钟提醒"
+                    
+                    navController.navigate("alarm_screen/${alarmId}/${isSubAlarm}/${alarmLabel}") {
                         popUpTo("clock_list_screen") { inclusive = true }
                     }
                 }
@@ -87,7 +95,7 @@ class MainActivity : ComponentActivity() {
                             val broadcastIntent = Intent("edu.cuhk.csci3310.csci3310project.NAVIGATE_TO_ALARM")
                             sendBroadcast(broadcastIntent)
                         }
-                        navController.navigate("alarm_screen") {
+                        navController.navigate("alarm_screen/${intent.getLongExtra("alarm_id", -1)}/${intent.getBooleanExtra("is_sub_alarm", false)}/${intent.getStringExtra("alarm_label") ?: "闹钟提醒"}") {
                             popUpTo("clock_list_screen") { inclusive = true }
                         }
                     }
@@ -121,14 +129,16 @@ class MainActivity : ComponentActivity() {
                     composable("clock_list_screen") {
                         TestScreen(activity = this@MainActivity)
                     }
-                    composable("alarm_screen") {
-                        val alarmId = intent?.getLongExtra("alarm_id", -1) ?: -1
-                        val isSubAlarm = intent?.getBooleanExtra("is_sub_alarm", false) ?: false
+                    composable("alarm_screen/{alarmId}/{isSubAlarm}/{alarmLabel}") { backStackEntry ->
+                        val alarmId = backStackEntry.arguments?.getString("alarmId")?.toLongOrNull() ?: -1L
+                        val isSubAlarm = backStackEntry.arguments?.getString("isSubAlarm")?.toBoolean() ?: false
+                        val alarmLabel = backStackEntry.arguments?.getString("alarmLabel") ?: "闹钟提醒"
+                        
                         var alarm by remember { mutableStateOf<Alarm?>(null) }
                         
-                        LaunchedEffect(alarmId) {
+                        LaunchedEffect(Unit) {
                             if (alarmId != -1L) {
-                                alarm = if (isSubAlarm) {
+                                val dbAlarm = if (isSubAlarm) {
                                     // 如果是子闹钟，获取父闹钟
                                     val subAlarm = AlarmDatabaseFacade.getSubAlarmById(this@MainActivity, alarmId)
                                     if (subAlarm != null) {
@@ -137,6 +147,15 @@ class MainActivity : ComponentActivity() {
                                 } else {
                                     AlarmDatabaseFacade.getAlarmById(this@MainActivity, alarmId)
                                 }
+                                
+                                if (dbAlarm != null) {
+                                    alarm = dbAlarm
+                                    Log.d("MainActivity", "从数据库获取到闹钟: $dbAlarm")
+                                } else {
+                                    Log.e("MainActivity", "未找到闹钟: alarmId=$alarmId, isSubAlarm=$isSubAlarm")
+                                }
+                            } else {
+                                Log.e("MainActivity", "无效的闹钟ID: $alarmId")
                             }
                         }
                         
@@ -144,8 +163,7 @@ class MainActivity : ComponentActivity() {
                             navController = navController,
                             alarm = alarm,
                             onStartTask = {
-                                stopAlarm()
-                                navController.navigate("clock_list_screen") {
+                                navController.navigate("typing_alarm_screen") {
                                     popUpTo("alarm_screen") { inclusive = true }
                                 }
                             }

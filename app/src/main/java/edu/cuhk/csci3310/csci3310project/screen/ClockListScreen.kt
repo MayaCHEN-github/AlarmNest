@@ -371,7 +371,7 @@ fun ClockListScreen(
                                 val newSubAlarm = SubAlarm(
                                     id = 0, // 新子闹钟的ID将由数据库自动生成
                                     parentAlarmId = alarm.id,
-                                    timeOffsetMinutes = 0, // 默认时间差为0
+                                    timeOffsetMinutes = 30, // 默认时间差为30分钟
                                     dismissType = DismissType.NO_ALARM, // 默认无触发方式
                                     label = "new subalarm", // 默认描述
                                     isEnabled = true // 默认启用

@@ -56,6 +56,13 @@ object AlarmManager {
             val intent = Intent(context, AlarmReceiver::class.java).apply {
                 putExtra("alarm_id", alarm.id)
                 putExtra("alarm_label", alarm.label)
+                putExtra("alarm_hour", alarm.hour)
+                putExtra("alarm_minute", alarm.minute)
+                putExtra("alarm_repeat_type", alarm.repeatType.name)
+                putExtra("alarm_custom_days", alarm.customDays)
+                putExtra("alarm_dismiss_type", alarm.dismissType.name)
+                putExtra("alarm_trigger_type", alarm.triggerType.name)
+                putExtra("alarm_is_enabled", alarm.isEnabled)
             }
             
             val pendingIntent = PendingIntent.getBroadcast(
