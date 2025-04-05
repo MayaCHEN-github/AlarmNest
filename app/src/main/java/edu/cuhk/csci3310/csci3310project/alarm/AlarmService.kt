@@ -13,6 +13,7 @@ import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import edu.cuhk.csci3310.csci3310project.MainActivity
+import java.util.*
 
 class AlarmService : Service() {
     companion object {
@@ -20,10 +21,13 @@ class AlarmService : Service() {
         private const val NOTIFICATION_ID = 1
         private const val WAKE_LOCK_TAG = "AlarmService::WakeLock"
         private const val TAG = "AlarmService"
+        private const val NOTIFICATION_INTERVAL = 2000L // 2秒
     }
 
     private var wakeLock: PowerManager.WakeLock? = null
     private var currentIntent: Intent? = null
+    private var notificationTimer: Timer? = null
+    private var isRunning = false
 
     override fun onCreate() {
         super.onCreate()
@@ -49,41 +53,72 @@ class AlarmService : Service() {
         Log.d(TAG, "服务开始启动，flags: $flags, startId: $startId")
         currentIntent = intent
         
-        // 创建一个最基本的通知
-        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_dialog_alert)
-            .setContentTitle("闹钟服务")
-            .setContentText("闹钟服务正在运行")
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .build()
-        
-        // 立即启动前台服务
-        startForeground(NOTIFICATION_ID, notification)
-        Log.d(TAG, "前台服务已启动")
-        
-        // 获取 WakeLock
-        wakeLock?.let {
-            if (!it.isHeld) {
-                it.acquire(10*60*1000L /*10 minutes*/)
-                Log.d(TAG, "WakeLock已获取")
-            }
+        // 检查是否是停止闹钟的广播
+        if (intent?.action == AlarmReceiver.ACTION_STOP_ALARM) {
+            Log.d(TAG, "收到停止闹钟的广播，准备停止服务")
+            stopSelf()
+            return START_NOT_STICKY
         }
         
-        // 创建并更新完整的通知
-        try {
-            val fullNotification = createNotification()
-            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.notify(NOTIFICATION_ID, fullNotification)
-        } catch (e: Exception) {
-            Log.e(TAG, "创建通知失败: ${e.message}", e)
+        if (!isRunning) {
+            isRunning = true
+            
+            try {
+                // 创建一个最基本的通知
+                val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+                    .setSmallIcon(android.R.drawable.ic_dialog_alert)
+                    .setContentTitle("闹钟服务")
+                    .setContentText("闹钟服务正在运行")
+                    .setPriority(NotificationCompat.PRIORITY_LOW)
+                    .build()
+                
+                // 立即启动前台服务
+                startForeground(NOTIFICATION_ID, notification)
+                Log.d(TAG, "前台服务已启动")
+                
+                // 获取 WakeLock
+                wakeLock?.let {
+                    if (!it.isHeld) {
+                        it.acquire(10*60*1000L /*10 minutes*/)
+                        Log.d(TAG, "WakeLock已获取")
+                    }
+                }
+                
+                // 启动定时器
+                startNotificationTimer()
+            } catch (e: Exception) {
+                Log.e(TAG, "启动服务时发生错误: ${e.message}", e)
+                stopSelf()
+                return START_NOT_STICKY
+            }
         }
         
         return START_STICKY
     }
 
+    private fun startNotificationTimer() {
+        notificationTimer = Timer().apply {
+            scheduleAtFixedRate(object : TimerTask() {
+                override fun run() {
+                    try {
+                        val fullNotification = createNotification()
+                        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                        notificationManager.notify(NOTIFICATION_ID, fullNotification)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "发送通知失败: ${e.message}", e)
+                    }
+                }
+            }, 0, NOTIFICATION_INTERVAL)
+        }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         Log.d(TAG, "服务已销毁")
+        
+        isRunning = false
+        notificationTimer?.cancel()
+        notificationTimer = null
         
         try {
             // 释放 WakeLock
@@ -131,6 +166,7 @@ class AlarmService : Service() {
             // 创建打开应用的Intent
             val openAppIntent = Intent(this, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                putExtra("stop_alarm", true)
             }
             val openAppPendingIntent = PendingIntent.getActivity(
                 this,

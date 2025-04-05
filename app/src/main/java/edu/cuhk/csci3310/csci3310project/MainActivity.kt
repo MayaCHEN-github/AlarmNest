@@ -1,5 +1,6 @@
 package edu.cuhk.csci3310.csci3310project
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -15,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import edu.cuhk.csci3310.csci3310project.alarm.AlarmPermission
+import edu.cuhk.csci3310.csci3310project.alarm.AlarmReceiver
 import edu.cuhk.csci3310.csci3310project.alarm.AlarmTest
 import edu.cuhk.csci3310.csci3310project.screen.AlarmOffScreen
 import edu.cuhk.csci3310.csci3310project.screen.ClockListScreen
@@ -29,6 +31,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.d("MainActivity", "onCreate called")
+        
+        // 检查是否需要停止闹钟
+        if (intent?.getBooleanExtra("stop_alarm", false) == true) {
+            stopAlarm()
+        }
         
         // 初始化计步器
         stepCounterViewModel = StepCounterViewModel()
@@ -84,6 +91,13 @@ class MainActivity : ComponentActivity() {
 
     fun isNotificationPermissionGranted(): Boolean {
         return AlarmPermission.isNotificationPermissionGranted()
+    }
+
+    private fun stopAlarm() {
+        val stopIntent = Intent(this, AlarmReceiver::class.java).apply {
+            action = AlarmReceiver.ACTION_STOP_ALARM
+        }
+        sendBroadcast(stopIntent)
     }
 }
 
