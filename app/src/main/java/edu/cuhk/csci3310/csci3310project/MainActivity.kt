@@ -15,33 +15,19 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.NavBackStackEntry
-import edu.cuhk.csci3310.csci3310project.alarm.AlarmPermission
-import edu.cuhk.csci3310.csci3310project.alarm.AlarmReceiver
-import edu.cuhk.csci3310.csci3310project.alarm.AlarmTest
-import edu.cuhk.csci3310.csci3310project.alarm.storage.Alarm
-import edu.cuhk.csci3310.csci3310project.alarm.storage.AlarmDatabaseFacade
-import edu.cuhk.csci3310.csci3310project.screen.AlarmOffScreen
-import edu.cuhk.csci3310.csci3310project.screen.AlarmScreen
-import edu.cuhk.csci3310.csci3310project.screen.AlarmTypingScreen
-import edu.cuhk.csci3310.csci3310project.screen.ClockListScreen
-import edu.cuhk.csci3310.csci3310project.screen.viewmodel.ClockListScreenViewModel
-import edu.cuhk.csci3310.csci3310project.sensor.StepCounterViewModel
-import edu.cuhk.csci3310.csci3310project.sensor.StepCounterUI
+import edu.cuhk.csci3310.csci3310project.backend.features.alarm.AlarmReceiver
+import edu.cuhk.csci3310.csci3310project.frontend.components.AlarmTest
+import edu.cuhk.csci3310.csci3310project.frontend.screens.ClockListScreen
+import edu.cuhk.csci3310.csci3310project.frontend.viewmodels.ClockListScreenViewModel
+import edu.cuhk.csci3310.csci3310project.frontend.components.StepCounterUI
+import edu.cuhk.csci3310.csci3310project.frontend.components.StepCounterViewModel
 import edu.cuhk.csci3310.csci3310project.ui.theme.CSCI3310ProjectTheme
-import edu.cuhk.csci3310.csci3310project.alarm.storage.RepeatType
-import edu.cuhk.csci3310.csci3310project.alarm.storage.DismissType
-import edu.cuhk.csci3310.csci3310project.alarm.storage.TriggerType
+import edu.cuhk.csci3310.csci3310project.utils.PermissionManager
 
 class MainActivity : ComponentActivity() {
     lateinit var stepCounterViewModel: StepCounterViewModel
@@ -80,8 +66,8 @@ class MainActivity : ComponentActivity() {
         stepCounterViewModel = StepCounterViewModel()
         stepCounterViewModel.initialize(this)
         
-        // 初始化权限请求启动器
-        AlarmPermission.initializePermissionLaunchers(this)
+        // 初始化权限管理器
+        PermissionManager.initialize(this)
         
         enableEdgeToEdge()
         setContent {
@@ -101,89 +87,34 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 
-                if (AlarmPermission.shouldShowStoragePermissionDialog()) {
+                // 显示权限请求对话框
+                if (PermissionManager.shouldShowPermissionDialog()) {
                     AlertDialog(
-                        onDismissRequest = { AlarmPermission.setShowStoragePermissionDialog(false) },
-                        title = { Text("需要存储权限") },
-                        text = { Text("此应用需要存储权限来保存闹钟数据。请在设置中授予权限。") },
+                        onDismissRequest = { PermissionManager.onPermissionCancelled(this@MainActivity) },
+                        title = { Text(PermissionManager.getPermissionDialogTitle()) },
+                        text = { Text(PermissionManager.getPermissionDialogContent()) },
                         confirmButton = {
                             Button(onClick = {
-                                AlarmPermission.setShowStoragePermissionDialog(false)
-                                AlarmPermission.openAppSettings(this)
+                                PermissionManager.onPermissionConfirmed(this@MainActivity)
                             }) {
                                 Text("去设置")
                             }
                         },
                         dismissButton = {
-                            Button(onClick = { AlarmPermission.setShowStoragePermissionDialog(false) }) {
+                            Button(onClick = { PermissionManager.onPermissionCancelled(this@MainActivity) }) {
                                 Text("取消")
                             }
                         }
                     )
                 }
                 
-                NavHost(
+                AppNavigation(
                     navController = navController,
-                    startDestination = "clock_list_screen"
-                ) {
-                    composable("clock_list_screen") {
-                        TestScreen(activity = this@MainActivity)
-                    }
-                    composable("alarm_screen/{alarmId}/{isSubAlarm}/{alarmLabel}") { backStackEntry ->
-                        val alarmId = backStackEntry.arguments?.getString("alarmId")?.toLongOrNull() ?: -1L
-                        val isSubAlarm = backStackEntry.arguments?.getString("isSubAlarm")?.toBoolean() ?: false
-                        val alarmLabel = backStackEntry.arguments?.getString("alarmLabel") ?: "闹钟提醒"
-                        
-                        var alarm by remember { mutableStateOf<Alarm?>(null) }
-                        
-                        LaunchedEffect(Unit) {
-                            if (alarmId != -1L) {
-                                val dbAlarm = if (isSubAlarm) {
-                                    // 如果是子闹钟，获取父闹钟
-                                    val subAlarm = AlarmDatabaseFacade.getSubAlarmById(this@MainActivity, alarmId)
-                                    if (subAlarm != null) {
-                                        AlarmDatabaseFacade.getAlarmById(this@MainActivity, subAlarm.parentAlarmId)
-                                    } else null
-                                } else {
-                                    AlarmDatabaseFacade.getAlarmById(this@MainActivity, alarmId)
-                                }
-                                
-                                if (dbAlarm != null) {
-                                    alarm = dbAlarm
-                                    Log.d("MainActivity", "从数据库获取到闹钟: $dbAlarm")
-                                } else {
-                                    Log.e("MainActivity", "未找到闹钟: alarmId=$alarmId, isSubAlarm=$isSubAlarm")
-                                }
-                            } else {
-                                Log.e("MainActivity", "无效的闹钟ID: $alarmId")
-                            }
-                        }
-                        
-                        AlarmScreen(
-                            navController = navController,
-                            alarm = alarm,
-                            onStartTask = {
-                                navController.navigate("typing_alarm_screen") {
-                                    popUpTo("alarm_screen") { inclusive = true }
-                                }
-                            }
-                        )
-                    }
-                    composable("typing_alarm_screen") {
-                        AlarmTypingScreen(navController = navController)
-                    }
-                    composable("alarm_off_screen") {
-                        AlarmOffScreen(
-                            navController = navController,
-                            onStopAlarm = { stopAlarm() }
-                        )
-                    }
-                }
+                    activity = this@MainActivity,
+                    onStopAlarm = { stopAlarm() }
+                )
             }
         }
-        
-        // 检查并请求权限
-        AlarmPermission.checkAndRequestPermissions(this)
     }
 
     override fun onDestroy() {
@@ -193,7 +124,14 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        stepCounterViewModel.start()
+        // 检查当前权限状态
+        PermissionManager.checkPermissionStatus(this)
+        // 开始权限请求流程
+        PermissionManager.checkAndRequestPermissions(this)
+        
+        if (PermissionManager.isActivityRecognitionPermissionGranted()) {
+            stepCounterViewModel.start()
+        }
     }
 
     override fun onPause() {
@@ -202,11 +140,11 @@ class MainActivity : ComponentActivity() {
     }
 
     fun isStoragePermissionGranted(): Boolean {
-        return AlarmPermission.isStoragePermissionGranted()
+        return PermissionManager.isStoragePermissionGranted()
     }
 
     fun isNotificationPermissionGranted(): Boolean {
-        return AlarmPermission.isNotificationPermissionGranted()
+        return PermissionManager.isNotificationPermissionGranted()
     }
 
     private fun stopAlarm() {

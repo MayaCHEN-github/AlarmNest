@@ -38,7 +38,7 @@
             </intent-filter>
         </activity>
 
-        <receiver android:name=".alarm.AlarmReceiver"
+        <receiver android:name=".backend.features.alarm.AlarmReceiver"
             android:exported="false"
             android:enabled="true">
             <intent-filter>
@@ -47,7 +47,7 @@
         </receiver>
 
         <service
-            android:name=".alarm.AlarmService"
+            android:name=".backend.features.alarm.AlarmService"
             android:exported="false"
             android:foregroundServiceType="mediaPlayback" />
 
